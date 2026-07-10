@@ -50,7 +50,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
   }
 
-  const body = await request.json();
-  const config = await saveHeroConfig(body);
-  return NextResponse.json(config);
+  try {
+    const body = await request.json();
+    const config = await saveHeroConfig(body);
+    return NextResponse.json(config);
+  } catch (error) {
+    console.error("Failed to save hero config", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "No se pudo guardar la configuración" },
+      { status: 500 },
+    );
+  }
 }
