@@ -33,28 +33,25 @@ export const useUserStore = create<UserStore>()(
       setProfile: (profile) => set({ profile }),
       addOrder: (order) => set((state) => ({ orders: [order, ...state.orders] })),
       syncFromSupabase: async () => {
-        const supabase = createClient();
-        const user = await supabase?.auth.getUser();
-        const userId = user?.data?.user?.id;
-        if (!supabase || !userId) {
-          return;
-        }
-
         try {
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("full_name, is_admin")
-            .eq("id", userId)
-            .maybeSingle();
-          const { data: ordersData } = await supabase.from("orders").select("id, status, total, created_at").eq("user_id", userId).order("created_at", { ascending: false });
+          const response = await fetch("/api/auth/me", { cache: "no-store" });
+          if (!response.ok) {
+            return;
+          }
+
+          const payload = (await response.json()) as {
+            user?: { email?: string | null };
+            profile?: { full_name?: string | null; is_admin?: boolean | null };
+            orders?: Array<{ id: string; status: string; total: number; created_at: string }>;
+          };
 
           set({
             profile: {
-              name: profileData?.full_name ?? user?.data?.user?.email ?? "",
-              email: user?.data?.user?.email ?? "",
-              is_admin: profileData?.is_admin ?? false,
+              name: payload.profile?.full_name ?? payload.user?.email ?? "",
+              email: payload.user?.email ?? "",
+              is_admin: payload.profile?.is_admin ?? false,
             },
-            orders: (ordersData ?? []).map((order) => ({
+            orders: (payload.orders ?? []).map((order) => ({
               id: order.id,
               status: order.status,
               total: Number(order.total),
@@ -64,8 +61,8 @@ export const useUserStore = create<UserStore>()(
         } catch {
           set({
             profile: {
-              name: user?.data?.user?.email ?? "",
-              email: user?.data?.user?.email ?? "",
+              name: "",
+              email: "",
               is_admin: false,
             },
             orders: [],

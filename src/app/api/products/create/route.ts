@@ -13,11 +13,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const serviceSupabase = await createServerSupabaseClient({ serviceRole: true });
+  const { data: profile, error: profileError } = await serviceSupabase
     .from("profiles")
     .select("is_admin")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (profileError || !profile?.is_admin) {
     return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });

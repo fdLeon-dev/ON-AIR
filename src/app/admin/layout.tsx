@@ -33,7 +33,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   let isAdmin = isConfiguredAdmin;
 
   try {
-    const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
+    const serviceSupabase = await createServerSupabaseClient({ serviceRole: true });
+    const { data: profile } = await serviceSupabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
     isAdmin = isAdmin || Boolean(profile?.is_admin);
   } catch {
     // Keep the configured admin email fallback active if the profiles table cannot be queried.
