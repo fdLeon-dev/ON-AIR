@@ -53,9 +53,15 @@ export default function SignInPage() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (user?.id) {
-      const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).maybeSingle();
-      if (profile?.is_admin) {
+    if (user?.email) {
+      const normalizedEmail = user.email.toLowerCase();
+      const isConfiguredAdmin = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
+        .split(",")
+        .map((entry) => entry.trim().toLowerCase())
+        .filter(Boolean)
+        .includes(normalizedEmail);
+
+      if (isConfiguredAdmin) {
         window.location.assign('/admin');
         return;
       }
