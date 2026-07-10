@@ -1,0 +1,182 @@
+[
+  {
+    "id": "236ebca5-251d-4726-b3ee-49a2405e8b6a",
+    "slug": "camperas",
+    "name": "camperas",
+    "brand": "Peak Sport",
+    "category": "Camperas",
+    "subcategory": "Urban",
+    "price": 100000,
+    "description": "",
+    "longDescription": "",
+    "features": [],
+    "sizes": [
+      "M"
+    ],
+    "colors": [
+      "Negro"
+    ],
+    "images": [
+      "https://lowledhmivhniidpfefb.supabase.co/storage/v1/object/sign/productos/658986009_17886489630467709_8639203319722916690_n.jpg?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV9jNTJmYzQ3Yi1jOWNjLTRiNmEtODRjYy03NWRkYjRmNDJkOWYiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJwcm9kdWN0b3MvNjU4OTg2MDA5XzE3ODg2NDg5NjMwNDY3NzA5Xzg2MzkyMDMzMTk3MjI5MTY2OTBfbi5qcGciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzgzNTMzMjYzLCJleHAiOjE3ODM2MTk2NjN9.3w6rHqV9TOBXvVRScU5NouxgOY30hgfWjUtTCink2k8"
+    ],
+    "stock": 10,
+    "tags": [
+      "Nuevo"
+    ],
+    "status": "Nuevo",
+    "material": "Tejido premium",
+    "weight": "0.3 kg",
+    "createdAt": "2026-07-08T15:19:49.416Z",
+    "updatedAt": "2026-07-08T18:04:45.602Z"
+  },
+  {
+    "id": "1de9692f-509e-4124-b229-746c015cd8d1",
+    "slug": "medias-deportivas-antideslizantes-grip",
+    "name": "Medias Deportivas Antideslizantes Grip",
+    "brand": "Peak Sport",
+    "category": "Accesorios",
+    "subcategory": "Training",
+    "price": 980,
+    "description": "Medias deportivas con tecnología antideslizante diseñadas para mejorar el agarre y la estabilidad durante el entrenamiento y la competición.",
+    "longDescription": "Medias deportivas con tecnología antideslizante diseñadas para mejorar el agarre y la estabilidad durante el entrenamiento y la competición.",
+    "features": [],
+    "sizes": [
+      "M"
+    ],
+    "colors": [
+      "Negro"
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80"
+    ],
+    "stock": 10,
+    "tags": [
+      "Nuevo"
+    ],
+    "status": "Nuevo",
+    "material": "Tejido premium",
+    "weight": "0.3 kg",
+    "createdAt": "2026-07-06T11:06:13.920Z",
+    "updatedAt": "2026-07-08T15:38:11.133Z"
+  },
+  {
+    "id": "aurora-set",
+    "slug": "aurora-set",
+    "name": "Conjunto Tommy Hilfiger",
+    "brand": "Peak Sport",
+    "category": "Conjuntos deportivos",
+    "subcategory": "Urbano",
+    "price": 2100,
+    "offerPrice": 99900,
+    "description": "Canguro + jogger",
+    "longDescription": "Diseñado para ofrecer comodidad, estilo y rendimiento. Ideal para un look urbano o deportivo, confeccionado con materiales de alta calidad para un uso diario.",
+    "features": [
+      "Secado rápido",
+      "Elasticidad 4-way",
+      "Corte anatómico"
+    ],
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "colors": [
+      "Negro",
+      "Gris",
+      "Blanco"
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "stock": 14,
+    "tags": [
+      "Nuevo",
+      "Premium"
+    ],
+    "status": "Nuevo",
+    "material": "Poliéster reciclado",
+    "weight": "0.42 kg",
+    "createdAt": "2026-06-01",
+    "updatedAt": "2026-07-06T11:04:50.185Z"
+  },
+  {
+    "id": "drift-hoodie",
+    "slug": "drift-hoodie",
+    "name": "Drift Signature Hoodie",
+    "brand": "Peak Sport",
+    "category": "Buzos",
+    "subcategory": "Hoodies",
+    "price": 89000,
+    "offerPrice": 74900,
+    "description": "Buzo urbano con interior brushed y acabados de alta gama.",
+    "longDescription": "Ideal para entrenar o transitar la ciudad, ofrece abrigo moderado y una textura sedosa que se siente premium al tacto.",
+    "features": [
+      "Interior brushed",
+      "Capucha regulable",
+      "Bolsillo canguro"
+    ],
+    "sizes": [
+      "S",
+      "M",
+      "L",
+      "XL"
+    ],
+    "colors": [
+      "Negro",
+      "Gris"
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "stock": 9,
+    "tags": [
+      "Oferta"
+    ],
+    "status": "Oferta",
+    "material": "Algodón premium",
+    "weight": "0.38 kg",
+    "createdAt": "2026-05-15",
+    "updatedAt": "2026-07-06T11:08:56.175Z"
+  },
+  {
+    "id": "velocity-jogger",
+    "slug": "velocity-jogger",
+    "name": "Velocity Jogger",
+    "brand": "Peak Sport",
+    "category": "Joggers",
+    "subcategory": "Training",
+    "price": 76000,
+    "description": "Jogger técnico con cintura ajustada y detalle premium en costuras.",
+    "longDescription": "Una propuesta cómoda y versátil para sesiones de entrenamiento o salidas urbanas con un acabado refinado.",
+    "features": [
+      "Tejido elástico",
+      "Bolsillos laterales",
+      "Banda en tobillo"
+    ],
+    "sizes": [
+      "S",
+      "M",
+      "L"
+    ],
+    "colors": [
+      "Negro",
+      "Blanco"
+    ],
+    "images": [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "stock": 11,
+    "tags": [
+      "Popular"
+    ],
+    "status": "Popular",
+    "material": "Nylon técnico",
+    "weight": "0.33 kg",
+    "createdAt": "2026-04-22",
+    "updatedAt": "2026-06-30"
+  }
+]
