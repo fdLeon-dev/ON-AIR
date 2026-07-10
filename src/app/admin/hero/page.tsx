@@ -127,17 +127,25 @@ export default function AdminHeroPage() {
     setSaving(true);
     setError(null);
 
-    const response = await fetch("/api/admin/hero", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(config),
-    });
+    try {
+      const response = await fetch("/api/admin/hero", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config),
+      });
 
-    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setError(payload?.error ?? "No se pudo guardar la configuración.");
+      } else {
+        setConfig(payload ?? config);
+      }
+    } catch {
       setError("No se pudo guardar la configuración.");
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
   };
 
   return (

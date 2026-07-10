@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { loadHeroConfig, saveHeroConfig } from "@/lib/data/persistence";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -52,7 +53,14 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const config = await saveHeroConfig(body);
+
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Payload inválido" }, { status: 400 });
+    }
+
+    const config = await saveHeroConfig(body as Partial<import("@/types").HeroConfig>);
+    revalidatePath("/");
+    revalidatePath("/admin/hero");
     return NextResponse.json(config);
   } catch (error) {
     console.error("Failed to save hero config", error);

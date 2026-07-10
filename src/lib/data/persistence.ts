@@ -4,9 +4,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { products as fallbackProducts } from "@/lib/data/products";
 import type { HeroConfig, Product } from "@/types";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const PRODUCTS_FILE = path.join(DATA_DIR, "products.json");
-const HERO_CONFIG_FILE = path.join(DATA_DIR, "hero-config.json");
+const DEFAULT_DATA_DIR = path.join(process.cwd(), "data");
+const FALLBACK_DATA_DIR = "/tmp/peak-sport-data";
 const STORAGE_BUCKET = "productos";
 const STORAGE_PRODUCTS_OBJECT = "app-data/products.json";
 const STORAGE_HERO_OBJECT = "app-data/hero-config.json";
@@ -18,8 +17,24 @@ const defaultHeroConfig: HeroConfig = {
   transitionMs: 3000,
 };
 
-async function ensureDataDir() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
+async function ensureDataDir(): Promise<string> {
+  const candidates = [process.env.DATA_DIR, DEFAULT_DATA_DIR, FALLBACK_DATA_DIR].filter((value): value is string => Boolean(value));
+
+  for (const candidate of candidates) {
+    try {
+      await fs.mkdir(candidate, { recursive: true });
+      return candidate;
+    } catch {
+      // Try the next candidate if the current one is not writable.
+    }
+  }
+
+  return DEFAULT_DATA_DIR;
+}
+
+async function getDataFilePath(fileName: string) {
+  const dataDir = await ensureDataDir();
+  return path.join(dataDir, fileName);
 }
 
 function getImageFields(raw: any): [string, string, string, string] {
@@ -103,8 +118,8 @@ export async function loadProducts(): Promise<Product[]> {
   }
 
   try {
-    await ensureDataDir();
-    const raw = await fs.readFile(PRODUCTS_FILE, "utf8");
+    const productsFile = await getDataFilePath("products.json");
+    const raw = await fs.readFile(productsFile, "utf8");
     const parsed = JSON.parse(raw) as any[];
     const normalized = parsed.map(normalizeProduct);
     return normalized.length ? normalized : fallbackProducts;
@@ -114,8 +129,8 @@ export async function loadProducts(): Promise<Product[]> {
 }
 
 export async function saveProducts(products: Product[]) {
-  await ensureDataDir();
-  await fs.writeFile(PRODUCTS_FILE, JSON.stringify(products, null, 2), "utf8");
+  const productsFile = await getDataFilePath("products.json");
+  await fs.writeFile(productsFile, JSON.stringify(products, null, 2), "utf8");
   await writeRemoteJson(STORAGE_PRODUCTS_OBJECT, products);
 }
 
@@ -141,8 +156,8 @@ export async function loadHeroConfig(): Promise<HeroConfig> {
   }
 
   try {
-    await ensureDataDir();
-    const raw = await fs.readFile(HERO_CONFIG_FILE, "utf8");
+    const heroConfigFile = await getDataFilePath("hero-config.json");
+    const raw = await fs.readFile(heroConfigFile, "utf8");
     const parsed = JSON.parse(raw) as Partial<HeroConfig>;
 
     return {
@@ -157,7 +172,7 @@ export async function loadHeroConfig(): Promise<HeroConfig> {
 }
 
 export async function saveHeroConfig(config: Partial<HeroConfig>) {
-  await ensureDataDir();
+  const heroConfigFile = await getDataFilePath("hero-config.json");
 
   const nextConfig: HeroConfig = {
     leftCardImages: normalizeHeroImages(config.leftCardImages ?? defaultHeroConfig.leftCardImages),
@@ -166,7 +181,7 @@ export async function saveHeroConfig(config: Partial<HeroConfig>) {
     transitionMs: typeof config.transitionMs === "number" ? config.transitionMs : defaultHeroConfig.transitionMs,
   };
 
-  await fs.writeFile(HERO_CONFIG_FILE, JSON.stringify(nextConfig, null, 2), "utf8");
+  await fs.writeFile(heroConfigFile, JSON.stringify(nextConfig, null, 2), "utf8");
   await writeRemoteJson(STORAGE_HERO_OBJECT, nextConfig);
   return nextConfig;
 }
