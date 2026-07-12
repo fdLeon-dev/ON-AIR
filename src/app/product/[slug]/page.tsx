@@ -8,6 +8,8 @@ import { formatCurrency } from "@/lib/utils";
 import { AddToCartButton } from "@/components/ecommerce/add-to-cart-button";
 import { ProductGallery } from "@/components/ecommerce/product-gallery";
 
+export const dynamic = "force-dynamic";
+
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }

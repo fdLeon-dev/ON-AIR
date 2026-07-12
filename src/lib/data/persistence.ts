@@ -1,11 +1,7 @@
-import { promises as fs } from "fs";
-import path from "path";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { products as fallbackProducts } from "@/lib/data/products";
 import type { HeroConfig, Product } from "@/types";
 
-const DEFAULT_DATA_DIR = path.join(process.cwd(), "data");
-const FALLBACK_DATA_DIR = "/tmp/peak-sport-data";
 const STORAGE_BUCKET = "productos";
 const STORAGE_PRODUCTS_OBJECT = "app-data/products.json";
 const STORAGE_HERO_OBJECT = "app-data/hero-config.json";
@@ -17,24 +13,8 @@ const defaultHeroConfig: HeroConfig = {
   transitionMs: 3000,
 };
 
-async function ensureDataDir(): Promise<string> {
-  const candidates = [process.env.DATA_DIR, DEFAULT_DATA_DIR, FALLBACK_DATA_DIR].filter((value): value is string => Boolean(value));
-
-  for (const candidate of candidates) {
-    try {
-      await fs.mkdir(candidate, { recursive: true });
-      return candidate;
-    } catch {
-      // Try the next candidate if the current one is not writable.
-    }
-  }
-
-  return DEFAULT_DATA_DIR;
-}
-
-async function getDataFilePath(fileName: string) {
-  const dataDir = await ensureDataDir();
-  return path.join(dataDir, fileName);
+async function getServiceSupabase() {
+  return createServerSupabaseClient({ serviceRole: true });
 }
 
 function getImageFields(raw: any): [string, string, string, string] {
@@ -82,7 +62,7 @@ function normalizeProduct(raw: any): Product {
 
 async function readRemoteJson<T>(objectPath: string): Promise<T | null> {
   try {
-    const supabase = await createServerSupabaseClient({ serviceRole: true });
+    const supabase = await getServiceSupabase();
     const { data, error } = await supabase.storage.from(STORAGE_BUCKET).download(objectPath);
     if (error || !data) return null;
     const text = await data.text();
@@ -94,7 +74,7 @@ async function readRemoteJson<T>(objectPath: string): Promise<T | null> {
 
 async function writeRemoteJson(objectPath: string, value: unknown) {
   try {
-    const supabase = await createServerSupabaseClient({ serviceRole: true });
+    const supabase = await getServiceSupabase();
     const { error } = await supabase.storage.from(STORAGE_BUCKET).upload(objectPath, JSON.stringify(value), {
       upsert: true,
       contentType: "application/json",
@@ -109,28 +89,66 @@ async function writeRemoteJson(objectPath: string, value: unknown) {
 
 export async function loadProducts(): Promise<Product[]> {
   try {
-    const remoteProducts = await readRemoteJson<Product[]>(STORAGE_PRODUCTS_OBJECT);
-    if (Array.isArray(remoteProducts) && remoteProducts.length) {
-      return remoteProducts.map(normalizeProduct);
+    const supabase = await getServiceSupabase();
+    const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
+    if (!error && Array.isArray(data)) {
+      return data.map(normalizeProduct);
     }
   } catch {
-    // Fallback to the local file if storage-backed data is unavailable.
+    // ignore and fallback to storage/json
   }
 
   try {
-    const productsFile = await getDataFilePath("products.json");
-    const raw = await fs.readFile(productsFile, "utf8");
-    const parsed = JSON.parse(raw) as any[];
-    const normalized = parsed.map(normalizeProduct);
-    return normalized.length ? normalized : fallbackProducts;
+    const remoteProducts = await readRemoteJson<Product[]>(STORAGE_PRODUCTS_OBJECT);
+    if (Array.isArray(remoteProducts)) return remoteProducts.map(normalizeProduct);
   } catch {
-    return fallbackProducts;
+    // ignore
   }
+
+  return fallbackProducts;
 }
 
 export async function saveProducts(products: Product[]) {
-  const productsFile = await getDataFilePath("products.json");
-  await fs.writeFile(productsFile, JSON.stringify(products, null, 2), "utf8");
+  try {
+    const supabase = await getServiceSupabase();
+    const rows = products.map((product) => ({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      brand: product.brand,
+      short_description: product.description,
+      description: product.longDescription,
+      category: product.category,
+      subcategory: product.subcategory,
+      price: product.price,
+      offer_price: product.offerPrice,
+      stock: product.stock,
+      status: product.status,
+      image1: product.image1,
+      image2: product.image2,
+      image3: product.image3,
+      image4: product.image4,
+      metadata: {
+        features: product.features,
+        sizes: product.sizes,
+        colors: product.colors,
+        tags: product.tags,
+        material: product.material,
+        fabricDetails: product.fabricDetails,
+        print: product.print,
+        style: product.style,
+        weight: product.weight,
+      },
+      created_at: product.createdAt,
+      updated_at: product.updatedAt,
+    }));
+
+    await supabase.from("products").upsert(rows, { onConflict: "id" });
+    return;
+  } catch (err) {
+    // fallback to storage json
+  }
+
   await writeRemoteJson(STORAGE_PRODUCTS_OBJECT, products);
 }
 
@@ -142,6 +160,21 @@ function normalizeHeroImages(images: unknown): string[] {
 
 export async function loadHeroConfig(): Promise<HeroConfig> {
   try {
+    const supabase = await getServiceSupabase();
+    const { data, error } = await supabase.from("hero_config").select("*").eq("config_key", "default").single();
+    if (!error && data) {
+      return {
+        leftCardImages: normalizeHeroImages(data.left_card_images ?? defaultHeroConfig.leftCardImages),
+        rightCardImages: normalizeHeroImages(data.right_card_images ?? defaultHeroConfig.rightCardImages),
+        carouselEnabled: typeof data.carousel_enabled === "boolean" ? data.carousel_enabled : defaultHeroConfig.carouselEnabled,
+        transitionMs: typeof data.transition_ms === "number" ? data.transition_ms : defaultHeroConfig.transitionMs,
+      };
+    }
+  } catch {
+    // fallback to storage
+  }
+
+  try {
     const remoteHeroConfig = await readRemoteJson<Partial<HeroConfig>>(STORAGE_HERO_OBJECT);
     if (remoteHeroConfig) {
       return {
@@ -152,28 +185,13 @@ export async function loadHeroConfig(): Promise<HeroConfig> {
       };
     }
   } catch {
-    // Fallback to the local file if storage-backed data is unavailable.
+    // ignore
   }
 
-  try {
-    const heroConfigFile = await getDataFilePath("hero-config.json");
-    const raw = await fs.readFile(heroConfigFile, "utf8");
-    const parsed = JSON.parse(raw) as Partial<HeroConfig>;
-
-    return {
-      leftCardImages: normalizeHeroImages(parsed.leftCardImages ?? defaultHeroConfig.leftCardImages),
-      rightCardImages: normalizeHeroImages(parsed.rightCardImages ?? defaultHeroConfig.rightCardImages),
-      carouselEnabled: typeof parsed.carouselEnabled === "boolean" ? parsed.carouselEnabled : defaultHeroConfig.carouselEnabled,
-      transitionMs: typeof parsed.transitionMs === "number" ? parsed.transitionMs : defaultHeroConfig.transitionMs,
-    };
-  } catch {
-    return defaultHeroConfig;
-  }
+  return defaultHeroConfig;
 }
 
 export async function saveHeroConfig(config: Partial<HeroConfig>) {
-  const heroConfigFile = await getDataFilePath("hero-config.json");
-
   const nextConfig: HeroConfig = {
     leftCardImages: normalizeHeroImages(config.leftCardImages ?? defaultHeroConfig.leftCardImages),
     rightCardImages: normalizeHeroImages(config.rightCardImages ?? defaultHeroConfig.rightCardImages),
@@ -181,13 +199,27 @@ export async function saveHeroConfig(config: Partial<HeroConfig>) {
     transitionMs: typeof config.transitionMs === "number" ? config.transitionMs : defaultHeroConfig.transitionMs,
   };
 
-  await fs.writeFile(heroConfigFile, JSON.stringify(nextConfig, null, 2), "utf8");
-  await writeRemoteJson(STORAGE_HERO_OBJECT, nextConfig);
-  return nextConfig;
+  try {
+    const supabase = await getServiceSupabase();
+    await supabase.from("hero_config").upsert(
+      {
+        config_key: "default",
+        left_card_images: nextConfig.leftCardImages,
+        right_card_images: nextConfig.rightCardImages,
+        carousel_enabled: nextConfig.carouselEnabled,
+        transition_ms: nextConfig.transitionMs,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "config_key" },
+    );
+    return nextConfig;
+  } catch {
+    await writeRemoteJson(STORAGE_HERO_OBJECT, nextConfig);
+    return nextConfig;
+  }
 }
 
 export async function createProduct(input: Partial<Product> & Pick<Product, "name" | "brand" | "category" | "price">) {
-  const current = await loadProducts();
   const [image1, image2, image3, image4] = getImageFields(input);
   const hasImages = Boolean(image1 || image2 || image3 || image4);
   const product: Product = {
@@ -220,13 +252,53 @@ export async function createProduct(input: Partial<Product> & Pick<Product, "nam
     updatedAt: new Date().toISOString(),
   };
 
-  const next = [product, ...current];
-  await saveProducts(next);
-  return product;
+  const supabase = await getServiceSupabase();
+  const { data, error } = await supabase
+    .from("products")
+    .insert(
+      {
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        brand: product.brand,
+        category: product.category,
+        subcategory: product.subcategory,
+        price: product.price,
+        offer_price: product.offerPrice,
+        short_description: product.description,
+        description: product.longDescription,
+        stock: product.stock,
+        status: product.status,
+        image1: product.image1,
+        image2: product.image2,
+        image3: product.image3,
+        image4: product.image4,
+        metadata: {
+          features: product.features,
+          sizes: product.sizes,
+          colors: product.colors,
+          tags: product.tags,
+          material: product.material,
+          fabricDetails: product.fabricDetails,
+          print: product.print,
+          style: product.style,
+          weight: product.weight,
+        },
+        created_at: product.createdAt,
+        updated_at: product.updatedAt,
+      },
+    )
+    .select()
+    .single();
+
+  if (error || !data) {
+    throw error ?? new Error("Failed to create product");
+  }
+
+  return normalizeProduct(data);
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>) {
-  const current = await loadProducts();
   const rawUpdates = { ...(updates as any) };
   const imageKeysPresent =
     "image1" in rawUpdates ||
@@ -235,37 +307,39 @@ export async function updateProduct(id: string, updates: Partial<Product>) {
     "image4" in rawUpdates ||
     Array.isArray(rawUpdates.images);
 
-  if (Array.isArray(rawUpdates.images)) {
-    delete rawUpdates.images;
-  }
+  if (Array.isArray(rawUpdates.images)) delete rawUpdates.images;
 
   const [image1, image2, image3, image4] = getImageFields(updates);
+  const metadata: any = {};
 
-  const next = current.map((product) => {
-    if (product.id !== id) return product;
+  if (Array.isArray(updates.features)) metadata.features = updates.features;
+  if (Array.isArray(updates.sizes)) metadata.sizes = updates.sizes;
+  if (Array.isArray(updates.colors)) metadata.colors = updates.colors;
+  if (Array.isArray(updates.tags)) metadata.tags = updates.tags;
+  if (typeof updates.material === "string") metadata.material = updates.material;
+  if (typeof updates.fabricDetails === "string") metadata.fabricDetails = updates.fabricDetails;
+  if (typeof updates.print === "string") metadata.print = updates.print;
+  if (typeof updates.style === "string") metadata.style = updates.style;
+  if (typeof updates.weight === "string") metadata.weight = updates.weight;
+  if (typeof updates.longDescription === "string") metadata.longDescription = updates.longDescription;
 
-    const updated = {
-      ...product,
-      ...rawUpdates,
-      updatedAt: new Date().toISOString(),
-    } as Product;
+  const updatePayload: any = {
+    ...rawUpdates,
+    ...(Object.keys(metadata).length ? { metadata } : {}),
+    ...(imageKeysPresent ? { image1, image2, image3, image4 } : {}),
+    updated_at: new Date().toISOString(),
+  };
 
-    if (imageKeysPresent) {
-      updated.image1 = image1;
-      updated.image2 = image2;
-      updated.image3 = image3;
-      updated.image4 = image4;
-    }
+  const supabase = await getServiceSupabase();
+  const { data, error } = await supabase.from("products").update(updatePayload).eq("id", id).select("*").single();
 
-    return updated;
-  });
-  await saveProducts(next);
-  return next.find((product) => product.id === id);
+  if (error || !data) throw error ?? new Error("Failed to update product");
+  return normalizeProduct(data);
 }
 
 export async function deleteProduct(id: string) {
-  const current = await loadProducts();
-  const next = current.filter((product) => product.id !== id);
-  await saveProducts(next);
-  return next;
+  const supabase = await getServiceSupabase();
+  const { error } = await supabase.from("products").delete().eq("id", id);
+  if (error) throw error;
+  return { success: true };
 }

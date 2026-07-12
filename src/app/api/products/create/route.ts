@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { createProduct } from "@/lib/data/persistence";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -26,5 +27,10 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const product = await createProduct(body);
+
+  revalidatePath("/");
+  revalidatePath("/catalog");
+  revalidatePath(`/product/${product.slug}`);
+
   return NextResponse.json(product, { status: 201 });
 }

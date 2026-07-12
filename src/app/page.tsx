@@ -6,6 +6,8 @@ import { ProductCard } from "@/components/ecommerce/product-card";
 import { categories } from "@/lib/data/products";
 import { loadHeroConfig, loadProducts } from "@/lib/data/persistence";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [products, heroConfig] = await Promise.all([loadProducts(), loadHeroConfig()]);
 
