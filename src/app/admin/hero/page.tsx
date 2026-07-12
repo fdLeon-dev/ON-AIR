@@ -131,6 +131,8 @@ export default function AdminHeroPage() {
       const response = await fetch("/api/admin/hero", {
         method: "POST",
       cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(config),
       });
 
       const payload = await response.json().catch(() => null);
