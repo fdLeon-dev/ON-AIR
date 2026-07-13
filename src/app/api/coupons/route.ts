@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
+import { loadCoupons } from "@/lib/data/coupons";
 
 export async function GET() {
-  return NextResponse.json([
-    { code: "PEAK10", discount: 10, label: "10% off" },
-    { code: "WELCOME20", discount: 20, label: "20% off" },
-  ]);
+  const coupons = await loadCoupons();
+  return NextResponse.json(coupons);
 }

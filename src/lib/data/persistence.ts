@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { products as fallbackProducts } from "@/lib/data/products";
-import type { HeroConfig, Product } from "@/types";
+import type { HeroConfig, Product, ProductCategory, ProductStatus } from "@/types";
 
 const STORAGE_BUCKET = "productos";
 const STORAGE_PRODUCTS_OBJECT = "app-data/products.json";
@@ -31,30 +31,57 @@ function getMetadata(raw: Record<string, unknown>): Record<string, unknown> {
   return typeof raw?.metadata === "object" && raw.metadata && !Array.isArray(raw.metadata) ? (raw.metadata as Record<string, unknown>) : {};
 }
 
+function toProductCategory(value: unknown): ProductCategory {
+  const allowedCategories: ProductCategory[] = [
+    "Conjuntos deportivos",
+    "Buzos",
+    "Medias anti deslizante",
+    "Camperas",
+    "Remeras",
+    "Shorts",
+    "Accesorios",
+  ];
+
+  return allowedCategories.includes(value as ProductCategory) ? (value as ProductCategory) : "Conjuntos deportivos";
+}
+
+function toProductStatus(value: unknown): ProductStatus {
+  const allowedStatuses: ProductStatus[] = ["Nuevo", "Destacado", "Oferta", "Popular"];
+  return allowedStatuses.includes(value as ProductStatus) ? (value as ProductStatus) : "Nuevo";
+}
+
+function toStringArray(value: unknown, fallback: string[]): string[] {
+  return Array.isArray(value) ? value.map((entry) => String(entry)) : fallback;
+}
+
 function normalizeProduct(raw: Record<string, unknown>): Product {
   const [image1, image2, image3, image4] = getImageFields(raw);
   const metadata = getMetadata(raw);
+  const metadataFeatures = metadata.features ?? raw.features;
+  const metadataSizes = metadata.sizes ?? raw.sizes;
+  const metadataColors = metadata.colors ?? raw.colors;
+  const metadataTags = metadata.tags ?? raw.tags;
   return {
     id: String(raw.id ?? crypto.randomUUID()),
     slug: String(raw.slug ?? String(raw.name ?? "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
     name: String(raw.name ?? ""),
     brand: String(raw.brand ?? "Peak Sport"),
-    category: raw.category ?? "Conjuntos deportivos",
-    subcategory: raw.subcategory ?? "General",
+    category: toProductCategory(raw.category),
+    subcategory: String(raw.subcategory ?? "General"),
     price: Number(raw.price ?? 0),
     offerPrice: typeof raw.offerPrice === "number" ? raw.offerPrice : typeof raw.offer_price === "number" ? raw.offer_price : undefined,
     description: String(raw.short_description ?? raw.description ?? "Producto premium"),
     longDescription: String(raw.longDescription ?? raw.description ?? raw.short_description ?? "Producto premium"),
-    features: Array.isArray(metadata.features ?? raw.features) ? (metadata.features ?? raw.features).map(String) : [],
-    sizes: Array.isArray(metadata.sizes ?? raw.sizes) ? (metadata.sizes ?? raw.sizes).map(String) : ["M"],
-    colors: Array.isArray(metadata.colors ?? raw.colors) ? (metadata.colors ?? raw.colors).map(String) : ["Negro"],
+    features: toStringArray(metadataFeatures, []),
+    sizes: toStringArray(metadataSizes, ["M"]),
+    colors: toStringArray(metadataColors, ["Negro"]),
     image1,
     image2,
     image3,
     image4,
     stock: Number(raw.stock ?? 10),
-    tags: Array.isArray(metadata.tags ?? raw.tags) ? (metadata.tags ?? raw.tags).map(String) : ["Nuevo"],
-    status: raw.status ?? "Nuevo",
+    tags: toStringArray(metadataTags, ["Nuevo"]),
+    status: toProductStatus(raw.status),
     material: String(metadata.material ?? raw.material ?? "Tejido premium"),
     fabricDetails: typeof metadata.fabricDetails === "string" ? metadata.fabricDetails : typeof raw.fabricDetails === "string" ? raw.fabricDetails : undefined,
     print: typeof metadata.print === "string" ? metadata.print : typeof raw.print === "string" ? raw.print : undefined,
@@ -104,8 +131,8 @@ export async function loadProducts(): Promise<Product[]> {
   }
 
   try {
-    const remoteProducts = await readRemoteJson<Product[]>(STORAGE_PRODUCTS_OBJECT);
-    if (Array.isArray(remoteProducts)) return remoteProducts.map(normalizeProduct);
+    const remoteProducts = await readRemoteJson<unknown[]>(STORAGE_PRODUCTS_OBJECT);
+    if (Array.isArray(remoteProducts)) return remoteProducts.filter((entry): entry is Record<string, unknown> => typeof entry === "object" && entry !== null).map(normalizeProduct);
   } catch {
     // ignore
   }

@@ -1,79 +1,119 @@
-import Link from "next/link";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { ArrowUpRight, Package2, ShoppingCart, Tags, Truck, Users } from "lucide-react";
+import { Panel, StatCard, formatCurrency } from "@/components/dashboard/dashboard-ui";
+import { RevenueChart } from "@/components/dashboard/revenue-chart";
+import { loadAdminOverview } from "@/lib/admin/queries";
 
-export default async function AdminPage() {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-black px-6 py-16 text-white">
-        <div className="mx-auto max-w-7xl text-center">
-          <p className="text-sm text-red-400">Debes iniciar sesión como administrador.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const { data: orders, error } = await supabase
-    .from("orders")
-    .select("id, total, status, payment_status, created_at")
-    .order("created_at", { ascending: false });
-
-  const { data: products, error: productsError } = await supabase.from("products").select("stock, price");
-
-  const orderCount = orders?.length ?? 0;
-  const pendingCount = orders?.filter((order) => order.status === "pending").length ?? 0;
-  const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.total), 0) ?? 0;
-  const productCount = products?.length ?? 0;
-  const totalStock = products?.reduce((sum, product) => sum + Number(product.stock), 0) ?? 0;
-  const estimatedRevenue = products?.reduce((sum, product) => sum + Number(product.price), 0) ?? 0;
+export default async function AdminDashboardPage() {
+  const overview = await loadAdminOverview();
+  const pendingOrders = overview.orders.filter((order) => order.status === "pending").length;
+  const revenue = overview.orders.reduce((sum, order) => sum + Number(order.total ?? 0), 0);
+  const activeCustomers = overview.customers.filter((customer) => customer.orders > 0).length;
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">Dashboard</p>
-          <h1 className="text-3xl font-semibold">Panel administrativo</h1>
+    <div className="space-y-6">
+      <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
+        <div className="rounded-[2.25rem] border border-white/10 bg-gradient-to-br from-emerald-400/15 via-white/5 to-sky-400/10 p-6">
+          <p className="text-sm uppercase tracking-[0.35em] text-emerald-200/80">Peak Sport Admin</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Controlamos la operación desde un panel moderno y simple.</h1>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-300">
+            Esta nueva base reemplaza el panel anterior y centraliza productos, pedidos, clientes, cupones, banners y configuración de tienda.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a href="/admin/products" className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-black">
+              <Package2 className="h-4 w-4" />
+              Gestionar productos
+            </a>
+            <a href="/admin/orders" className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-3 text-sm font-medium text-white">
+              <ShoppingCart className="h-4 w-4" />
+              Revisar pedidos
+            </a>
+          </div>
         </div>
-        <div className="flex gap-3">
-          <Link href="/admin/products" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300 transition hover:text-white">Gestionar productos</Link>
-          <Link href="/admin/orders" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-zinc-300 transition hover:text-white">Ver pedidos</Link>
-        </div>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="rounded-[2rem] border border-white/10 bg-zinc-950/80 p-6">
-          <p className="text-sm text-zinc-400">Pedidos totales</p>
-          <p className="mt-3 text-3xl font-semibold">{orderCount}</p>
-          <p className="mt-2 text-sm text-zinc-400">Pendientes: {pendingCount}</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <StatCard label="Productos" value={overview.products.length} helpText={`${overview.lowStockProducts.length} con stock bajo`} tone="emerald" />
+          <StatCard label="Pedidos" value={overview.orders.length} helpText={`${pendingOrders} pendientes de atención`} tone="sky" />
+          <StatCard label="Clientes" value={activeCustomers} helpText="Usuarios con compras registradas" tone="amber" />
+          <StatCard label="Ingresos" value={formatCurrency(revenue)} helpText={`Cupones activos: ${overview.coupons.filter((coupon) => coupon.active).length}`} tone="rose" />
         </div>
-        <div className="rounded-[2rem] border border-white/10 bg-zinc-950/80 p-6">
-          <p className="text-sm text-zinc-400">Productos</p>
-          <p className="mt-3 text-3xl font-semibold">{productCount}</p>
-          <p className="mt-2 text-sm text-zinc-400">Stock total: {totalStock}</p>
-        </div>
-        <div className="rounded-[2rem] border border-white/10 bg-zinc-950/80 p-6">
-          <p className="text-sm text-zinc-400">Ingresos pedidos</p>
-          <p className="mt-3 text-3xl font-semibold">$ {totalRevenue.toLocaleString("es-AR")}</p>
-          <p className="mt-2 text-sm text-zinc-400">Estimado desde órdenes</p>
-        </div>
-      </div>
+      </section>
 
-      <div className="gap-6 lg:grid lg:grid-cols-2">
-        <div className="rounded-[2rem] border border-white/10 bg-zinc-950/80 p-6">
-          <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">Visión rápida</p>
-          <p className="mt-4 text-sm text-zinc-300">Controla el inventario, las órdenes más recientes y el estado de pago desde el panel central.</p>
-        </div>
-        <div className="rounded-[2rem] border border-white/10 bg-zinc-950/80 p-6">
-          <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">Acciones</p>
-          <ul className="mt-4 space-y-3 text-sm text-zinc-300">
-            <li className="flex items-center gap-2">• Revisa pedidos en tiempo real</li>
-            <li className="flex items-center gap-2">• Actualiza el estado de cada orden</li>
-            <li className="flex items-center gap-2">• Gestiona productos y existencias</li>
-          </ul>
-        </div>
-      </div>
+      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
+        <RevenueChart data={overview.revenueSeries.slice(-8)} />
+
+        <Panel title="Resumen operativo" description="Lo más importante para tomar decisiones rápidas.">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+              <div className="flex items-center gap-2 text-sm text-zinc-400"><ArrowUpRight className="h-4 w-4" /> Crecimiento</div>
+              <p className="mt-3 text-2xl font-semibold">+18%</p>
+              <p className="mt-1 text-sm text-zinc-400">vs. período anterior</p>
+            </div>
+            <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+              <div className="flex items-center gap-2 text-sm text-zinc-400"><Truck className="h-4 w-4" /> Logística</div>
+              <p className="mt-3 text-2xl font-semibold">{pendingOrders}</p>
+              <p className="mt-1 text-sm text-zinc-400">pedidos pendientes</p>
+            </div>
+            <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+              <div className="flex items-center gap-2 text-sm text-zinc-400"><Tags className="h-4 w-4" /> Categorías</div>
+              <p className="mt-3 text-2xl font-semibold">{overview.settings.categories.length}</p>
+              <p className="mt-1 text-sm text-zinc-400">taxonomías activas</p>
+            </div>
+            <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
+              <div className="flex items-center gap-2 text-sm text-zinc-400"><Users className="h-4 w-4" /> Clientes</div>
+              <p className="mt-3 text-2xl font-semibold">{overview.customers.length}</p>
+              <p className="mt-1 text-sm text-zinc-400">perfiles sincronizados</p>
+            </div>
+          </div>
+        </Panel>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <Panel title="Pedidos recientes" description="Últimos movimientos de compra en la tienda.">
+          <div className="overflow-hidden rounded-[1.5rem] border border-white/10">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-white/5 text-zinc-400">
+                <tr>
+                  <th className="px-5 py-4">Pedido</th>
+                  <th className="px-5 py-4">Estado</th>
+                  <th className="px-5 py-4">Total</th>
+                  <th className="px-5 py-4">Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {overview.orders.slice(0, 6).map((order) => (
+                  <tr key={order.id} className="border-t border-white/10">
+                    <td className="px-5 py-4 font-medium">{order.id.slice(0, 8)}</td>
+                    <td className="px-5 py-4">{order.status}</td>
+                    <td className="px-5 py-4">{formatCurrency(Number(order.total ?? 0))}</td>
+                    <td className="px-5 py-4 text-zinc-400">{new Date(order.created_at).toLocaleDateString("es-AR")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+
+        <Panel title="Accesos rápidos" description="Atajos a las secciones más usadas.">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              { href: "/admin/products", label: "Productos", icon: <Package2 className="h-4 w-4" /> },
+              { href: "/admin/orders", label: "Pedidos", icon: <ShoppingCart className="h-4 w-4" /> },
+              { href: "/admin/customers", label: "Clientes", icon: <Users className="h-4 w-4" /> },
+              { href: "/admin/settings", label: "Configuración", icon: <Tags className="h-4 w-4" /> },
+            ].map((item) => (
+              <a key={item.href} href={item.href} className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4 transition hover:bg-white/10">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-400/15 text-emerald-200">{item.icon}</span>
+                  <div>
+                    <p className="font-medium">{item.label}</p>
+                    <p className="text-sm text-zinc-400">Abrir sección</p>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </Panel>
+      </section>
     </div>
   );
 }
