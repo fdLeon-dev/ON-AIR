@@ -83,7 +83,7 @@ export default function AdminHeroPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void fetch("/api/admin/hero", { cache: "no-store" })
+    void fetch("/api/admin/hero", { cache: "no-store", credentials: "include" })
       .then((res) => res.json())
       .then((data) => setConfig(data))
       .catch(() => setError("No se pudo cargar la configuración."))
@@ -130,9 +130,10 @@ export default function AdminHeroPage() {
     try {
       const response = await fetch("/api/admin/hero", {
         method: "POST",
-      cache: "no-store",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(config),
+        cache: "no-store",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config),
       });
 
       const payload = await response.json().catch(() => null);
