@@ -17,7 +17,7 @@ async function getServiceSupabase() {
   return createServerSupabaseClient({ serviceRole: true });
 }
 
-function getImageFields(raw: any): [string, string, string, string] {
+function getImageFields(raw: Record<string, unknown>): [string, string, string, string] {
   const images = Array.isArray(raw?.images) ? raw.images : [];
   return [
     String(raw?.image1 ?? images[0] ?? ""),
@@ -27,8 +27,13 @@ function getImageFields(raw: any): [string, string, string, string] {
   ];
 }
 
-function normalizeProduct(raw: any): Product {
+function getMetadata(raw: Record<string, unknown>): Record<string, unknown> {
+  return typeof raw?.metadata === "object" && raw.metadata && !Array.isArray(raw.metadata) ? (raw.metadata as Record<string, unknown>) : {};
+}
+
+function normalizeProduct(raw: Record<string, unknown>): Product {
   const [image1, image2, image3, image4] = getImageFields(raw);
+  const metadata = getMetadata(raw);
   return {
     id: String(raw.id ?? crypto.randomUUID()),
     slug: String(raw.slug ?? String(raw.name ?? "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
@@ -37,24 +42,24 @@ function normalizeProduct(raw: any): Product {
     category: raw.category ?? "Conjuntos deportivos",
     subcategory: raw.subcategory ?? "General",
     price: Number(raw.price ?? 0),
-    offerPrice: typeof raw.offerPrice === "number" ? raw.offerPrice : undefined,
-    description: String(raw.description ?? "Producto premium"),
-    longDescription: String(raw.longDescription ?? raw.description ?? "Producto premium"),
-    features: Array.isArray(raw.features) ? raw.features.map(String) : [],
-    sizes: Array.isArray(raw.sizes) ? raw.sizes.map(String) : ["M"],
-    colors: Array.isArray(raw.colors) ? raw.colors.map(String) : ["Negro"],
+    offerPrice: typeof raw.offerPrice === "number" ? raw.offerPrice : typeof raw.offer_price === "number" ? raw.offer_price : undefined,
+    description: String(raw.short_description ?? raw.description ?? "Producto premium"),
+    longDescription: String(raw.longDescription ?? raw.description ?? raw.short_description ?? "Producto premium"),
+    features: Array.isArray(metadata.features ?? raw.features) ? (metadata.features ?? raw.features).map(String) : [],
+    sizes: Array.isArray(metadata.sizes ?? raw.sizes) ? (metadata.sizes ?? raw.sizes).map(String) : ["M"],
+    colors: Array.isArray(metadata.colors ?? raw.colors) ? (metadata.colors ?? raw.colors).map(String) : ["Negro"],
     image1,
     image2,
     image3,
     image4,
     stock: Number(raw.stock ?? 10),
-    tags: Array.isArray(raw.tags) ? raw.tags.map(String) : ["Nuevo"],
+    tags: Array.isArray(metadata.tags ?? raw.tags) ? (metadata.tags ?? raw.tags).map(String) : ["Nuevo"],
     status: raw.status ?? "Nuevo",
-    material: String(raw.material ?? "Tejido premium"),
-    fabricDetails: typeof raw.fabricDetails === "string" ? raw.fabricDetails : undefined,
-    print: typeof raw.print === "string" ? raw.print : undefined,
-    style: typeof raw.style === "string" ? raw.style : undefined,
-    weight: String(raw.weight ?? "0.3 kg"),
+    material: String(metadata.material ?? raw.material ?? "Tejido premium"),
+    fabricDetails: typeof metadata.fabricDetails === "string" ? metadata.fabricDetails : typeof raw.fabricDetails === "string" ? raw.fabricDetails : undefined,
+    print: typeof metadata.print === "string" ? metadata.print : typeof raw.print === "string" ? raw.print : undefined,
+    style: typeof metadata.style === "string" ? metadata.style : typeof raw.style === "string" ? raw.style : undefined,
+    weight: String(metadata.weight ?? raw.weight ?? "0.3 kg"),
     createdAt: String(raw.createdAt ?? new Date().toISOString()),
     updatedAt: String(raw.updatedAt ?? new Date().toISOString()),
   };
@@ -145,7 +150,7 @@ export async function saveProducts(products: Product[]) {
 
     await supabase.from("products").upsert(rows, { onConflict: "id" });
     return;
-  } catch (err) {
+  } catch {
     // fallback to storage json
   }
 
@@ -299,7 +304,7 @@ export async function createProduct(input: Partial<Product> & Pick<Product, "nam
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>) {
-  const rawUpdates = { ...(updates as any) };
+  const rawUpdates: Record<string, unknown> = { ...(updates as Record<string, unknown>) };
   const imageKeysPresent =
     "image1" in rawUpdates ||
     "image2" in rawUpdates ||
@@ -310,7 +315,7 @@ export async function updateProduct(id: string, updates: Partial<Product>) {
   if (Array.isArray(rawUpdates.images)) delete rawUpdates.images;
 
   const [image1, image2, image3, image4] = getImageFields(updates);
-  const metadata: any = {};
+  const metadata: Record<string, unknown> = {};
 
   if (Array.isArray(updates.features)) metadata.features = updates.features;
   if (Array.isArray(updates.sizes)) metadata.sizes = updates.sizes;
@@ -323,8 +328,26 @@ export async function updateProduct(id: string, updates: Partial<Product>) {
   if (typeof updates.weight === "string") metadata.weight = updates.weight;
   if (typeof updates.longDescription === "string") metadata.longDescription = updates.longDescription;
 
-  const updatePayload: any = {
+  delete rawUpdates.description;
+  delete rawUpdates.longDescription;
+  delete rawUpdates.features;
+  delete rawUpdates.sizes;
+  delete rawUpdates.colors;
+  delete rawUpdates.tags;
+  delete rawUpdates.material;
+  delete rawUpdates.fabricDetails;
+  delete rawUpdates.print;
+  delete rawUpdates.style;
+  delete rawUpdates.weight;
+  delete rawUpdates.offerPrice;
+  delete rawUpdates.createdAt;
+  delete rawUpdates.updatedAt;
+
+  const updatePayload: Record<string, unknown> = {
     ...rawUpdates,
+    ...(typeof updates.offerPrice === "number" ? { offer_price: updates.offerPrice } : {}),
+    ...(typeof updates.description === "string" ? { short_description: updates.description } : {}),
+    ...(typeof updates.longDescription === "string" ? { description: updates.longDescription } : {}),
     ...(Object.keys(metadata).length ? { metadata } : {}),
     ...(imageKeysPresent ? { image1, image2, image3, image4 } : {}),
     updated_at: new Date().toISOString(),

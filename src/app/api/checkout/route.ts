@@ -21,7 +21,45 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "El carrito está vacío. Añade items antes de confirmar el pedido." }, { status: 400 });
   }
 
-  const total = body.items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
+  const orderItems: Array<{
+    order_id: string;
+    product_id: string;
+    quantity: number;
+    price_at_purchase: number;
+  }> = [];
+
+  const isUuid = (value: string) => /^[0-9a-fA-F-]{36}$/.test(value);
+
+  for (const item of body.items as Array<{ id: string; quantity: number }>) {
+    const quantity = Number(item.quantity);
+    if (!item.id || !Number.isFinite(quantity) || quantity <= 0) {
+      return NextResponse.json({ error: "Cada item del carrito debe tener id y cantidad válidos" }, { status: 400 });
+    }
+
+    const productQuery = isUuid(item.id)
+      ? supabase.from("products").select("id, price, offer_price").eq("id", item.id)
+      : supabase.from("products").select("id, price, offer_price").eq("slug", item.id);
+
+    const { data: product, error: productError } = await productQuery.maybeSingle();
+
+    if (productError || !product) {
+      return NextResponse.json({ error: `Producto no encontrado en la base de datos: ${item.id}` }, { status: 400 });
+    }
+
+    const priceAtPurchase = Number(product.offer_price ?? product.price ?? 0);
+    if (!Number.isFinite(priceAtPurchase) || priceAtPurchase < 0) {
+      return NextResponse.json({ error: `Precio inválido para el producto: ${item.id}` }, { status: 400 });
+    }
+
+    orderItems.push({
+      order_id: "",
+      product_id: product.id,
+      quantity,
+      price_at_purchase: priceAtPurchase,
+    });
+  }
+
+  const total = orderItems.reduce((sum, item) => sum + item.price_at_purchase * item.quantity, 0);
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .insert({
@@ -38,31 +76,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: orderError?.message ?? "No se pudo crear el pedido" }, { status: 500 });
   }
 
-  // Resolve product identifiers: allow slugs (local) by resolving to DB UUIDs
-  const orderItems: any[] = [];
-  for (const item of body.items as { id: string; price: number; quantity: number }[]) {
-    let productId = item.id;
-    const isUuid = (val: string) => /^[0-9a-fA-F-]{36}$/.test(val);
-    if (!isUuid(productId)) {
-      const { data: prod, error: prodError } = await supabase.from("products").select("id").eq("slug", productId).maybeSingle();
-      if (prod && prod.id) {
-        productId = prod.id;
-      } else {
-        return NextResponse.json({ error: `Producto no encontrado en la base de datos: ${productId}` }, { status: 400 });
-      }
-    }
-
-    orderItems.push({
-      order_id: order.id,
-      product_id: productId,
-      quantity: item.quantity,
-      price_at_purchase: item.price,
-    });
-  }
-
-  const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
+  const rowsToInsert = orderItems.map((item) => ({ ...item, order_id: order.id }));
+  const { error: itemsError } = await supabase.from("order_items").insert(rowsToInsert);
 
   if (itemsError) {
+    await supabase.from("orders").delete().eq("id", order.id);
     return NextResponse.json({ error: itemsError.message }, { status: 500 });
   }
 

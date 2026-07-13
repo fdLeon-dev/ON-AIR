@@ -9,13 +9,13 @@ export default async function AdminOrdersPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth/admin-login");
+    redirect("/auth/sign-in");
   }
 
   const { data, error } = await supabase
     .from("orders")
     .select(`id, status, total, payment_status, created_at, user_id, profiles(full_name)`)
-    .order("created_at", { ascending: false }) as { data: AdminOrderSummary[] | null; error: any };
+    .order("created_at", { ascending: false }) as { data: AdminOrderSummary[] | null; error: { message: string } | null };
 
   const orders = data ?? [];
 

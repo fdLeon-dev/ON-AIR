@@ -15,7 +15,10 @@ type OrderItemDetail = {
   products?: {
     slug?: string;
     name?: string;
-    images?: string[];
+    image1?: string;
+    image2?: string;
+    image3?: string;
+    image4?: string;
   }[];
 };
 
@@ -44,14 +47,15 @@ type OrderDetail = {
   order_histories?: OrderHistoryEntry[];
 };
 
-export default async function AdminOrderDetailPage({ params }: { params: { id: string } }) {
+export default async function AdminOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth/admin-login");
+    redirect("/auth/sign-in");
   }
 
   const { data, error } = await supabase
@@ -59,8 +63,8 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
     .select(
       `id, status, total, payment_status, created_at, shipping_address, user_id, profiles(full_name), order_items(quantity, price_at_purchase, products(slug, name, image1, image2, image3, image4)), order_histories(id, old_status, new_status, notes, created_at, profiles(full_name))`,
     )
-    .eq("id", params.id)
-    .single() as { data: OrderDetail | null; error: any };
+    .eq("id", id)
+    .single() as { data: OrderDetail | null; error: { message: string } | null };
 
   if (error || !data) {
     notFound();
@@ -152,8 +156,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
                   const product = item.products?.[0];
                   const productName = product?.name ?? "Producto";
                   const productSlug = product?.slug;
-                  const p = product as any;
-                  const productImage = p?.image1 ?? p?.image2 ?? p?.image3 ?? p?.image4 ?? null;
+                  const productImage = product?.image1 ?? product?.image2 ?? product?.image3 ?? product?.image4 ?? null;
                   const subtotal = item.quantity * item.price_at_purchase;
 
                   return (
