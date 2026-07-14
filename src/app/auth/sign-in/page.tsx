@@ -38,12 +38,10 @@ export default function SignInPage() {
 
       const persistBody = await persistRes.json().catch(() => ({}));
       if (!persistRes.ok) {
-        setMessage(persistBody.error ?? 'No se pudo persistir la sesión en el servidor.');
-        return;
+        console.warn('session persistence failed', persistBody);
       }
     } catch (error: unknown) {
-      setMessage(error instanceof Error ? error.message : 'Error de red al persistir la sesión.');
-      return;
+      console.warn('session persistence error', error);
     }
 
     // Allow server to set cookies, then check admin flag and redirect
