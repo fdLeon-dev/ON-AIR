@@ -30,8 +30,9 @@ export function Header() {
           return;
         }
 
-        const response = await fetch("/api/auth/me", { credentials: "include" });
-        if (!response.ok) {
+        const { data: userResult } = await supabase.auth.getUser();
+        const user = userResult?.user ?? null;
+        if (!user) {
           if (active) {
             setIsAdmin(false);
             window.localStorage.removeItem("peak-sport-admin");
@@ -39,12 +40,25 @@ export function Header() {
           return;
         }
 
-        const payload = await response.json();
-        const storedAdmin = Boolean(payload?.is_admin);
+        const normalizedEmail = user.email?.toLowerCase() ?? "";
+        const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? "")
+          .split(",")
+          .map((e) => e.trim().toLowerCase())
+          .filter(Boolean);
+
+        let storedAdmin = adminEmails.includes(normalizedEmail);
+
+        try {
+          const { data: profileData } = await supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle();
+          if (profileData?.is_admin) storedAdmin = true;
+        } catch {
+          // ignore profile lookup errors
+        }
+
         if (active) {
-          setIsAdmin(storedAdmin);
+          setIsAdmin(Boolean(storedAdmin));
           if (typeof window !== "undefined") {
-            window.localStorage.setItem("peak-sport-admin", String(storedAdmin));
+            window.localStorage.setItem("peak-sport-admin", String(Boolean(storedAdmin)));
           }
         }
       } catch {
