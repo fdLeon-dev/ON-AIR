@@ -367,6 +367,10 @@ export async function saveFeaturedCategories(categories: FeaturedCategory[]) {
   const supabase = await getServiceSupabase();
   const { error } = await supabase.from("featured_categories").upsert(nextCategories, { onConflict: "id" });
   if (error) {
+    const message = String(error.message ?? error);
+    if (message.includes("slug") || message.includes("unique")) {
+      throw new Error("El slug de categoría ya existe; usa un slug único para cada categoría.");
+    }
     throw error;
   }
 
@@ -377,6 +381,10 @@ export async function deleteFeaturedCategory(id: string) {
   const supabase = await getServiceSupabase();
   const { error } = await supabase.from("featured_categories").delete().eq("id", id);
   if (error) {
+    const message = String(error.message ?? error);
+    if (message.includes("constraint") || message.includes("delete")) {
+      throw new Error("No se pudo eliminar la categoría destacada. Verifica el id e intenta de nuevo.");
+    }
     throw error;
   }
 

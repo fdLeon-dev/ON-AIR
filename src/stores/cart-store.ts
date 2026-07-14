@@ -35,6 +35,13 @@ function usesVariantColumns(error: any) {
   return /column\s+(?:"?cart_items\.\"?)?(?:size|color|short_description)\"?\s+does not exist/i.test(message);
 }
 
+function parseCartItemId(id: string) {
+  const [productId, size = "", color = ""] = id.split(":");
+  const isUuid = (val: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
+  if (!isUuid(productId)) return null;
+  return { productId, size, color };
+}
+
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
@@ -191,7 +198,33 @@ export const useCartStore = create<CartStore>()(
           return;
         }
 
-        await supabase.from("cart_items").delete().eq("id", id).eq("user_id", userId);
+        const parsedItem = parseCartItemId(id);
+        const item = get().items.find((entry) => entry.id === id);
+
+        if (parsedItem && item) {
+          await supabase
+            .from("cart_items")
+            .delete()
+            .match({
+              user_id: userId,
+              product_id: parsedItem.productId,
+              size: parsedItem.size || item.size || "",
+              color: parsedItem.color || item.color || "",
+            });
+        } else if (item) {
+          await supabase
+            .from("cart_items")
+            .delete()
+            .match({
+              user_id: userId,
+              product_id: item.productId,
+              size: item.size ?? "",
+              color: item.color ?? "",
+            });
+        } else {
+          await supabase.from("cart_items").delete().eq("id", id).eq("user_id", userId);
+        }
+
         await get().syncFromSupabase();
       },
       updateQuantity: async (id, quantity) => {
@@ -203,10 +236,57 @@ export const useCartStore = create<CartStore>()(
           return;
         }
 
+        const parsedItem = parseCartItemId(id);
+        const item = get().items.find((entry) => entry.id === id);
+
         if (quantity <= 0) {
-          await supabase.from("cart_items").delete().eq("id", id).eq("user_id", userId);
+          if (parsedItem && item) {
+            await supabase
+              .from("cart_items")
+              .delete()
+              .match({
+                user_id: userId,
+                product_id: parsedItem.productId,
+                size: parsedItem.size || item.size || "",
+                color: parsedItem.color || item.color || "",
+              });
+          } else if (item) {
+            await supabase
+              .from("cart_items")
+              .delete()
+              .match({
+                user_id: userId,
+                product_id: item.productId,
+                size: item.size ?? "",
+                color: item.color ?? "",
+              });
+          } else {
+            await supabase.from("cart_items").delete().eq("id", id).eq("user_id", userId);
+          }
         } else {
-          await supabase.from("cart_items").update({ quantity, updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", userId);
+          if (parsedItem && item) {
+            await supabase
+              .from("cart_items")
+              .update({ quantity, updated_at: new Date().toISOString() })
+              .match({
+                user_id: userId,
+                product_id: parsedItem.productId,
+                size: parsedItem.size || item.size || "",
+                color: parsedItem.color || item.color || "",
+              });
+          } else if (item) {
+            await supabase
+              .from("cart_items")
+              .update({ quantity, updated_at: new Date().toISOString() })
+              .match({
+                user_id: userId,
+                product_id: item.productId,
+                size: item.size ?? "",
+                color: item.color ?? "",
+              });
+          } else {
+            await supabase.from("cart_items").update({ quantity, updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", userId);
+          }
         }
 
         await get().syncFromSupabase();
