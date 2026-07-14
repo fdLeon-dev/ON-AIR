@@ -22,7 +22,7 @@ export function ProductManager({
   const [message, setMessage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Partial<Product> | null>(null);
+  const [draft, setDraft] = useState<(Partial<Product> & { sizesInput?: string; sizeStockInput?: string }) | null>(null);
   const [form, setForm] = useState({
     name: "",
     brand: brandOptions[0] ?? "Peak Sport",
@@ -30,6 +30,8 @@ export function ProductManager({
     subcategory: "Training",
     price: "100000",
     stock: "10",
+    sizesInput: "S, M, L",
+    sizeStockInput: "10, 8, 5",
     status: "Nuevo" as ProductStatus,
     description: "",
     longDescription: "",
@@ -38,6 +40,23 @@ export function ProductManager({
     image3: "",
     image4: "",
   });
+
+  const parseSizesInput = (value: string) => value.split(",").map((entry) => entry.trim()).filter(Boolean);
+
+  const parseSizeStockInput = (value: string, sizes: string[]) => {
+    const parsedValues = value.split(",").map((entry) => Number(entry.trim())).filter((entry) => Number.isFinite(entry));
+    return sizes.reduce<Record<string, number>>((accumulator, size, index) => {
+      accumulator[size] = parsedValues[index] ?? 0;
+      return accumulator;
+    }, {});
+  };
+
+  const buildSizePayload = (sizesInput: string, sizeStockInput: string) => {
+    const sizes = parseSizesInput(sizesInput);
+    const sizeStock = parseSizeStockInput(sizeStockInput, sizes);
+    const totalStock = sizes.length > 0 ? Object.values(sizeStock).reduce((sum, value) => sum + value, 0) : 0;
+    return { sizes, sizeStock, totalStock };
+  };
 
   const filteredProducts = useMemo(
     () =>
@@ -64,6 +83,10 @@ export function ProductManager({
       image2: product.image2,
       image3: product.image3,
       image4: product.image4,
+      sizes: product.sizes,
+      sizeStock: product.sizeStock,
+      sizesInput: product.sizes.join(", "),
+      sizeStockInput: product.sizes.map((size) => product.sizeStock?.[size] ?? 0).join(", "),
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -73,14 +96,18 @@ export function ProductManager({
     setLoading(true);
     setMessage(null);
 
+    const { sizesInput = "", sizeStockInput = "", ...restDraft } = draft;
+    const { sizes, sizeStock, totalStock } = buildSizePayload(sizesInput, sizeStockInput);
     const response = await fetch(`/api/products/${product.id}`, {
       method: "PATCH",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...draft,
+        ...restDraft,
+        sizes,
+        sizeStock,
         price: Number(draft.price),
-        stock: Number(draft.stock),
+        stock: totalStock || Number(draft.stock ?? 0),
       }),
     });
 
@@ -104,14 +131,18 @@ export function ProductManager({
     setLoading(true);
     setMessage(null);
 
+    const { sizesInput, sizeStockInput, ...restForm } = form;
+    const { sizes, sizeStock, totalStock } = buildSizePayload(sizesInput, sizeStockInput);
     const response = await fetch("/api/products/create", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...form,
+        ...restForm,
+        sizes,
+        sizeStock,
         price: Number(form.price),
-        stock: Number(form.stock),
+        stock: totalStock || Number(form.stock),
         longDescription: form.longDescription || form.description,
       }),
     });
@@ -141,6 +172,8 @@ export function ProductManager({
       image2: "",
       image3: "",
       image4: "",
+      sizesInput: "S, M, L",
+      sizeStockInput: "10, 8, 5",
     });
   };
 
@@ -177,7 +210,9 @@ export function ProductManager({
           </select>
           <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Subcategoría" value={form.subcategory} onChange={(event) => setForm((current) => ({ ...current, subcategory: event.target.value }))} />
           <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Precio" type="number" value={form.price} onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))} required />
-          <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Stock" type="number" value={form.stock} onChange={(event) => setForm((current) => ({ ...current, stock: event.target.value }))} required />
+          <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Stock total" type="number" value={form.stock} onChange={(event) => setForm((current) => ({ ...current, stock: event.target.value }))} required />
+          <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Talles (S, M, L)" value={form.sizesInput} onChange={(event) => setForm((current) => ({ ...current, sizesInput: event.target.value }))} />
+          <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Stock por talle (10, 8, 5)" value={form.sizeStockInput} onChange={(event) => setForm((current) => ({ ...current, sizeStockInput: event.target.value }))} />
           <select className="rounded-full border border-white/10 bg-white/5 px-4 py-3" value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as ProductStatus }))}>
             {statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
@@ -236,6 +271,20 @@ export function ProductManager({
                           <select className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.category ?? categoryOptions[0]} onChange={(event) => setDraft((current) => (current ? { ...current, category: event.target.value as ProductCategory } : current))}>
                             {categoryOptions.map((option) => <option key={option} value={option}>{option}</option>)}
                           </select>
+                          <input className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.subcategory ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, subcategory: event.target.value } : current))} />
+                          <input className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" placeholder="Talles (S, M, L)" value={draft?.sizesInput ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, sizesInput: event.target.value } : current))} />
+                          <input className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" placeholder="Stock por talle (10, 8, 5)" value={draft?.sizeStockInput ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, sizeStockInput: event.target.value } : current))} />
+                          <input className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" type="number" value={draft?.price ?? 0} onChange={(event) => setDraft((current) => (current ? { ...current, price: Number(event.target.value) } : current))} />
+                          <input className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" type="number" value={draft?.stock ?? 0} onChange={(event) => setDraft((current) => (current ? { ...current, stock: Number(event.target.value) } : current))} />
+                          <select className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.status ?? "Nuevo"} onChange={(event) => setDraft((current) => (current ? { ...current, status: event.target.value as ProductStatus } : current))}>
+                            {statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                          </select>
+                          <div className="grid gap-2 md:grid-cols-2">
+                            <input type="url" className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.image1 ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, image1: event.target.value } : current))} />
+                            <input type="url" className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.image2 ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, image2: event.target.value } : current))} />
+                            <input type="url" className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.image3 ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, image3: event.target.value } : current))} />
+                            <input type="url" className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.image4 ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, image4: event.target.value } : current))} />
+                          </div>
                           <textarea className="min-h-20 w-full rounded-[1rem] border border-white/10 bg-white/5 px-3 py-2" value={draft?.description ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, description: event.target.value } : current))} />
                           <textarea className="min-h-24 w-full rounded-[1rem] border border-white/10 bg-white/5 px-3 py-2" value={draft?.longDescription ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, longDescription: event.target.value } : current))} />
                         </div>
@@ -243,6 +292,7 @@ export function ProductManager({
                         <div className="space-y-1">
                           <p className="font-medium text-white">{product.name}</p>
                           <p className="text-xs text-zinc-400">{product.brand} · {product.category}</p>
+                          {product.sizes.length > 0 ? <p className="text-xs text-zinc-500">Talles: {product.sizes.join(", ")}</p> : null}
                         </div>
                       )}
                     </td>

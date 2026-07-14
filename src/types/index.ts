@@ -22,6 +22,7 @@ export interface Product {
   longDescription: string;
   features: string[];
   sizes: string[];
+  sizeStock?: Record<string, number>;
   colors: string[];
   image1: string;
   image2: string;
@@ -55,8 +56,13 @@ export interface Review {
 }
 
 export interface HeroConfig {
-  leftCardImages: string[];
-  rightCardImages: string[];
+  hero1Url: string;
+  hero2Url: string;
+  hero3Url: string;
   carouselEnabled: boolean;
-  transitionMs: number;
+  autoplay: boolean;
+  loop: boolean;
+  pauseOnHover: boolean;
+  transitionType: "fade" | "slide";
+  transitionInterval: number;
 }

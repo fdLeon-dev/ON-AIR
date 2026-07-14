@@ -7,10 +7,15 @@ const STORAGE_PRODUCTS_OBJECT = "app-data/products.json";
 const STORAGE_HERO_OBJECT = "app-data/hero-config.json";
 
 const defaultHeroConfig: HeroConfig = {
-  leftCardImages: ["/peak.png", "", ""],
-  rightCardImages: ["/peak.png", "", ""],
+  hero1Url: "",
+  hero2Url: "",
+  hero3Url: "",
   carouselEnabled: false,
-  transitionMs: 3000,
+  autoplay: true,
+  loop: true,
+  pauseOnHover: true,
+  transitionType: "fade",
+  transitionInterval: 5,
 };
 
 async function getServiceSupabase() {
@@ -33,6 +38,25 @@ function getImageFields(raw: Record<string, unknown>): [string, string, string, 
 
 function getMetadata(raw: Record<string, unknown>): Record<string, unknown> {
   return typeof raw?.metadata === "object" && raw.metadata && !Array.isArray(raw.metadata) ? (raw.metadata as Record<string, unknown>) : {};
+}
+
+function normalizeHeroUrl(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim();
+}
+
+function normalizeHeroBoolean(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function normalizeHeroInterval(value: unknown): number {
+  const parsed = Number(value ?? 0);
+  if (!Number.isFinite(parsed)) return 5;
+  return Math.max(2, Math.min(20, Math.round(parsed)));
+}
+
+function normalizeHeroTransitionType(value: unknown): "fade" | "slide" {
+  return value === "slide" ? "slide" : "fade";
 }
 
 function toProductCategory(value: unknown): ProductCategory {
@@ -58,11 +82,31 @@ function toStringArray(value: unknown, fallback: string[]): string[] {
   return Array.isArray(value) ? value.map((entry) => String(entry)) : fallback;
 }
 
+function normalizeSizeStock(value: unknown): Record<string, number> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+
+  return Object.entries(value as Record<string, unknown>).reduce<Record<string, number>>((accumulator, [size, stock]) => {
+    const normalizedStock = Number(stock);
+    accumulator[size] = Number.isFinite(normalizedStock) ? normalizedStock : 0;
+    return accumulator;
+  }, {});
+}
+
+function deriveStockValue(stock: unknown, sizeStock: Record<string, number> | undefined): number {
+  if (sizeStock && Object.keys(sizeStock).length > 0) {
+    return Object.values(sizeStock).reduce((sum, value) => sum + value, 0);
+  }
+
+  const normalized = Number(stock ?? 0);
+  return Number.isFinite(normalized) ? normalized : 0;
+}
+
 function normalizeProduct(raw: Record<string, unknown>): Product {
   const [image1, image2, image3, image4] = getImageFields(raw);
   const metadata = getMetadata(raw);
   const metadataFeatures = metadata.features ?? raw.features;
   const metadataSizes = metadata.sizes ?? raw.sizes;
+  const metadataSizeStock = normalizeSizeStock(metadata.sizeStock ?? raw.sizeStock);
   const metadataColors = metadata.colors ?? raw.colors;
   const metadataTags = metadata.tags ?? raw.tags;
   return {
@@ -78,12 +122,13 @@ function normalizeProduct(raw: Record<string, unknown>): Product {
     longDescription: String(raw.longDescription ?? raw.description ?? raw.short_description ?? "Producto premium"),
     features: toStringArray(metadataFeatures, []),
     sizes: toStringArray(metadataSizes, ["M"]),
+    sizeStock: metadataSizeStock,
     colors: toStringArray(metadataColors, ["Negro"]),
     image1,
     image2,
     image3,
     image4,
-    stock: Number(raw.stock ?? 10),
+    stock: deriveStockValue(raw.stock, metadataSizeStock),
     tags: toStringArray(metadataTags, ["Nuevo"]),
     status: toProductStatus(raw.status),
     material: String(metadata.material ?? raw.material ?? "Tejido premium"),
@@ -188,22 +233,23 @@ export async function saveProducts(products: Product[]) {
   await writeRemoteJson(STORAGE_PRODUCTS_OBJECT, products);
 }
 
-function normalizeHeroImages(images: unknown): string[] {
-  if (!Array.isArray(images)) return [...defaultHeroConfig.leftCardImages];
-  const normalized = images.slice(0, 3).map((item) => (typeof item === "string" ? item : ""));
-  return [...normalized, "", ""].slice(0, 3);
-}
-
 export async function loadHeroConfig(): Promise<HeroConfig> {
   try {
     const supabase = await getSessionSupabase();
     const { data, error } = await supabase.from("hero_config").select("*").eq("config_key", "default").single();
     if (!error && data) {
+      const leftCardImages = Array.isArray(data.left_card_images) ? data.left_card_images : [];
+      const rightCardImages = Array.isArray(data.right_card_images) ? data.right_card_images : [];
       return {
-        leftCardImages: normalizeHeroImages(data.left_card_images ?? defaultHeroConfig.leftCardImages),
-        rightCardImages: normalizeHeroImages(data.right_card_images ?? defaultHeroConfig.rightCardImages),
-        carouselEnabled: typeof data.carousel_enabled === "boolean" ? data.carousel_enabled : defaultHeroConfig.carouselEnabled,
-        transitionMs: typeof data.transition_ms === "number" ? data.transition_ms : defaultHeroConfig.transitionMs,
+        hero1Url: normalizeHeroUrl(data.hero_1_url ?? leftCardImages[0]),
+        hero2Url: normalizeHeroUrl(data.hero_2_url ?? leftCardImages[1] ?? rightCardImages[0]),
+        hero3Url: normalizeHeroUrl(data.hero_3_url ?? leftCardImages[2] ?? rightCardImages[1]),
+        carouselEnabled: normalizeHeroBoolean(data.carousel_enabled, defaultHeroConfig.carouselEnabled),
+        autoplay: normalizeHeroBoolean(data.autoplay, defaultHeroConfig.autoplay),
+        loop: normalizeHeroBoolean(data.loop, defaultHeroConfig.loop),
+        pauseOnHover: normalizeHeroBoolean(data.pause_on_hover, defaultHeroConfig.pauseOnHover),
+        transitionType: normalizeHeroTransitionType(data.transition_type),
+        transitionInterval: normalizeHeroInterval(data.transition_interval ?? data.transition_ms ?? defaultHeroConfig.transitionInterval),
       };
     }
   } catch {
@@ -214,10 +260,15 @@ export async function loadHeroConfig(): Promise<HeroConfig> {
     const remoteHeroConfig = await readRemoteJson<Partial<HeroConfig>>(STORAGE_HERO_OBJECT);
     if (remoteHeroConfig) {
       return {
-        leftCardImages: normalizeHeroImages(remoteHeroConfig.leftCardImages ?? defaultHeroConfig.leftCardImages),
-        rightCardImages: normalizeHeroImages(remoteHeroConfig.rightCardImages ?? defaultHeroConfig.rightCardImages),
-        carouselEnabled: typeof remoteHeroConfig.carouselEnabled === "boolean" ? remoteHeroConfig.carouselEnabled : defaultHeroConfig.carouselEnabled,
-        transitionMs: typeof remoteHeroConfig.transitionMs === "number" ? remoteHeroConfig.transitionMs : defaultHeroConfig.transitionMs,
+        hero1Url: normalizeHeroUrl(remoteHeroConfig.hero1Url ?? defaultHeroConfig.hero1Url),
+        hero2Url: normalizeHeroUrl(remoteHeroConfig.hero2Url ?? defaultHeroConfig.hero2Url),
+        hero3Url: normalizeHeroUrl(remoteHeroConfig.hero3Url ?? defaultHeroConfig.hero3Url),
+        carouselEnabled: normalizeHeroBoolean(remoteHeroConfig.carouselEnabled, defaultHeroConfig.carouselEnabled),
+        autoplay: normalizeHeroBoolean(remoteHeroConfig.autoplay, defaultHeroConfig.autoplay),
+        loop: normalizeHeroBoolean(remoteHeroConfig.loop, defaultHeroConfig.loop),
+        pauseOnHover: normalizeHeroBoolean(remoteHeroConfig.pauseOnHover, defaultHeroConfig.pauseOnHover),
+        transitionType: normalizeHeroTransitionType(remoteHeroConfig.transitionType),
+        transitionInterval: normalizeHeroInterval(remoteHeroConfig.transitionInterval),
       };
     }
   } catch {
@@ -229,21 +280,34 @@ export async function loadHeroConfig(): Promise<HeroConfig> {
 
 export async function saveHeroConfig(config: Partial<HeroConfig>) {
   const nextConfig: HeroConfig = {
-    leftCardImages: normalizeHeroImages(config.leftCardImages ?? defaultHeroConfig.leftCardImages),
-    rightCardImages: normalizeHeroImages(config.rightCardImages ?? defaultHeroConfig.rightCardImages),
-    carouselEnabled: typeof config.carouselEnabled === "boolean" ? config.carouselEnabled : defaultHeroConfig.carouselEnabled,
-    transitionMs: typeof config.transitionMs === "number" ? config.transitionMs : defaultHeroConfig.transitionMs,
+    hero1Url: normalizeHeroUrl(config.hero1Url ?? defaultHeroConfig.hero1Url),
+    hero2Url: normalizeHeroUrl(config.hero2Url ?? defaultHeroConfig.hero2Url),
+    hero3Url: normalizeHeroUrl(config.hero3Url ?? defaultHeroConfig.hero3Url),
+    carouselEnabled: normalizeHeroBoolean(config.carouselEnabled, defaultHeroConfig.carouselEnabled),
+    autoplay: normalizeHeroBoolean(config.autoplay, defaultHeroConfig.autoplay),
+    loop: normalizeHeroBoolean(config.loop, defaultHeroConfig.loop),
+    pauseOnHover: normalizeHeroBoolean(config.pauseOnHover, defaultHeroConfig.pauseOnHover),
+    transitionType: normalizeHeroTransitionType(config.transitionType),
+    transitionInterval: normalizeHeroInterval(config.transitionInterval),
   };
 
   try {
-    const supabase = await getSessionSupabase();
+    const supabase = await getServiceSupabase();
     await supabase.from("hero_config").upsert(
       {
         config_key: "default",
-        left_card_images: nextConfig.leftCardImages,
-        right_card_images: nextConfig.rightCardImages,
+        hero_1_url: nextConfig.hero1Url,
+        hero_2_url: nextConfig.hero2Url,
+        hero_3_url: nextConfig.hero3Url,
         carousel_enabled: nextConfig.carouselEnabled,
-        transition_ms: nextConfig.transitionMs,
+        autoplay: nextConfig.autoplay,
+        loop: nextConfig.loop,
+        pause_on_hover: nextConfig.pauseOnHover,
+        transition_type: nextConfig.transitionType,
+        transition_interval: nextConfig.transitionInterval,
+        left_card_images: [nextConfig.hero1Url, nextConfig.hero2Url, nextConfig.hero3Url].filter(Boolean),
+        right_card_images: [nextConfig.hero1Url, nextConfig.hero2Url, nextConfig.hero3Url].filter(Boolean),
+        transition_ms: nextConfig.transitionInterval * 1000,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "config_key" },
@@ -262,6 +326,8 @@ export async function createProduct(
   supabaseClient?: SupabaseClientLike,
 ) {
   const [image1, image2, image3, image4] = getImageFields(input);
+  const normalizedSizes = Array.isArray(input.sizes) ? input.sizes : ["M"];
+  const normalizedSizeStock = normalizeSizeStock(input.sizeStock);
   const hasImages = Boolean(image1 || image2 || image3 || image4);
   const product: Product = {
     id: input.id ?? crypto.randomUUID(),
@@ -275,13 +341,14 @@ export async function createProduct(
     description: input.description ?? "Producto premium",
     longDescription: input.longDescription ?? input.description ?? "Producto premium",
     features: input.features ?? [],
-    sizes: input.sizes ?? ["M"],
+    sizes: normalizedSizes,
+    sizeStock: normalizedSizeStock,
     colors: input.colors ?? ["Negro"],
     image1: hasImages ? image1 : "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80",
     image2: hasImages ? image2 : "",
     image3: hasImages ? image3 : "",
     image4: hasImages ? image4 : "",
-    stock: input.stock ?? 10,
+    stock: deriveStockValue(input.stock ?? 10, normalizedSizeStock),
     tags: input.tags ?? ["Nuevo"],
     status: input.status ?? "Nuevo",
     material: input.material ?? "Tejido premium",
@@ -317,6 +384,7 @@ export async function createProduct(
         metadata: {
           features: product.features,
           sizes: product.sizes,
+          sizeStock: product.sizeStock && Object.keys(product.sizeStock).length > 0 ? product.sizeStock : undefined,
           colors: product.colors,
           tags: product.tags,
           material: product.material,
@@ -352,9 +420,11 @@ export async function updateProduct(id: string, updates: Partial<Product>, supab
 
   const [image1, image2, image3, image4] = getImageFields(updates);
   const metadata: Record<string, unknown> = {};
+  const normalizedSizeStock = normalizeSizeStock(updates.sizeStock);
 
   if (Array.isArray(updates.features)) metadata.features = updates.features;
   if (Array.isArray(updates.sizes)) metadata.sizes = updates.sizes;
+  if (normalizedSizeStock && Object.keys(normalizedSizeStock).length > 0) metadata.sizeStock = normalizedSizeStock;
   if (Array.isArray(updates.colors)) metadata.colors = updates.colors;
   if (Array.isArray(updates.tags)) metadata.tags = updates.tags;
   if (typeof updates.material === "string") metadata.material = updates.material;
@@ -366,6 +436,7 @@ export async function updateProduct(id: string, updates: Partial<Product>, supab
 
   delete rawUpdates.description;
   delete rawUpdates.longDescription;
+  delete rawUpdates.sizeStock;
   delete rawUpdates.features;
   delete rawUpdates.sizes;
   delete rawUpdates.colors;
@@ -383,6 +454,7 @@ export async function updateProduct(id: string, updates: Partial<Product>, supab
     ...rawUpdates,
     ...(typeof updates.offerPrice === "number" ? { offer_price: updates.offerPrice } : {}),
     ...(typeof updates.description === "string" ? { short_description: updates.description } : {}),
+    ...(typeof updates.stock === "number" || normalizedSizeStock ? { stock: deriveStockValue(updates.stock, normalizedSizeStock) } : {}),
     ...(typeof updates.longDescription === "string" ? { description: updates.longDescription } : {}),
     ...(Object.keys(metadata).length ? { metadata } : {}),
     ...(imageKeysPresent ? { image1, image2, image3, image4 } : {}),

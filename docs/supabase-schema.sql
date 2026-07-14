@@ -119,9 +119,17 @@ create table if not exists public.order_histories (
 
 create table if not exists public.hero_config (
   config_key text primary key,
+  hero_1_url text not null default '',
+  hero_2_url text not null default '',
+  hero_3_url text not null default '',
   left_card_images jsonb not null default '[]'::jsonb,
   right_card_images jsonb not null default '[]'::jsonb,
   carousel_enabled boolean not null default false,
+  autoplay boolean not null default true,
+  loop boolean not null default true,
+  pause_on_hover boolean not null default true,
+  transition_type text not null default 'fade',
+  transition_interval integer not null default 5,
   transition_ms integer not null default 3000,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

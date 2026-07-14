@@ -10,9 +10,10 @@ interface AddToCartButtonProps {
   product: Product;
   className?: string;
   label?: ReactNode;
+  selectedSize?: string;
 }
 
-export function AddToCartButton({ product, className, label = "Agregar al carrito" }: AddToCartButtonProps) {
+export function AddToCartButton({ product, className, label = "Agregar al carrito", selectedSize }: AddToCartButtonProps) {
   const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
   const [visible, setVisible] = useState(false);
@@ -33,6 +34,7 @@ export function AddToCartButton({ product, className, label = "Agregar al carrit
       price: product.offerPrice ?? product.price,
       image: product.image1 || product.image2 || product.image3 || product.image4,
       quantity: 1,
+      size: selectedSize || product.sizes[0] || "",
     });
 
     setVisible(true);

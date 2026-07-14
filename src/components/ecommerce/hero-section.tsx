@@ -13,47 +13,63 @@ interface HeroSectionProps {
 
 const IMAGE_TRANSITION_MS = 700;
 
-function normalizeVisibleImages(images: string[]) {
-  return images.filter(Boolean).slice(0, 3);
+function getVisibleImages(heroConfig: HeroConfig) {
+  return [heroConfig.hero1Url, heroConfig.hero2Url, heroConfig.hero3Url].filter(Boolean);
 }
 
 export function HeroSection({ heroConfig }: HeroSectionProps) {
   const [index, setIndex] = useState(0);
-  const visibleLeftImages = useMemo(() => normalizeVisibleImages(heroConfig.leftCardImages), [heroConfig.leftCardImages]);
-  const visibleRightImages = useMemo(() => normalizeVisibleImages(heroConfig.rightCardImages), [heroConfig.rightCardImages]);
+  const [isHovered, setIsHovered] = useState(false);
+  const images = useMemo(() => getVisibleImages(heroConfig), [heroConfig.hero1Url, heroConfig.hero2Url, heroConfig.hero3Url]);
 
   useEffect(() => {
-    if (!heroConfig.carouselEnabled) {
-      setIndex(0);
+    if (!heroConfig.carouselEnabled || !heroConfig.autoplay || images.length <= 1 || (heroConfig.pauseOnHover && isHovered)) {
       return;
     }
 
-    const activeLength = Math.max(1, Math.max(visibleLeftImages.length, visibleRightImages.length));
     const interval = window.setInterval(() => {
-      setIndex((current) => (current + 1) % activeLength);
-    }, heroConfig.transitionMs);
+      setIndex((current) => {
+        if (current >= images.length - 1) {
+          return heroConfig.loop ? 0 : current;
+        }
+        return current + 1;
+      });
+    }, heroConfig.transitionInterval * 1000);
 
     return () => window.clearInterval(interval);
-  }, [heroConfig.carouselEnabled, heroConfig.transitionMs, visibleLeftImages.length, visibleRightImages.length]);
+  }, [heroConfig.autoplay, heroConfig.carouselEnabled, heroConfig.loop, heroConfig.pauseOnHover, heroConfig.transitionInterval, images.length, isHovered]);
 
-  const leftImages = heroConfig.carouselEnabled ? visibleLeftImages : [visibleLeftImages[0] ?? "/peak.png"];
-  const rightImages = heroConfig.carouselEnabled ? visibleRightImages : [visibleRightImages[0] ?? "/peak.png"];
+  useEffect(() => {
+    if (!heroConfig.carouselEnabled || images.length === 0) {
+      setIndex(0);
+      return;
+    }
+    setIndex((current) => Math.min(current, images.length - 1));
+  }, [heroConfig.carouselEnabled, images.length]);
 
-  const renderCard = (images: string[], label: string) => (
-    <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-zinc-950/70 p-3 shadow-[0_30px_100px_rgba(0,0,0,0.35)] min-h-[560px]">
-      {images.map((src, imageIndex) => (
+  const heroImages = heroConfig.carouselEnabled && heroConfig.autoplay ? images : images.slice(0, 1);
+  const activeImages = heroImages.length > 0 ? heroImages : ["/peak.png"];
+
+  const renderCard = (label: string) => (
+    <div
+      className="relative min-h-[560px] overflow-hidden rounded-[2.5rem] border border-white/10 bg-zinc-950/70 p-3 shadow-[0_30px_100px_rgba(0,0,0,0.35)]"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {activeImages.map((src, imageIndex) => (
         <div
           key={src || imageIndex}
-          className="absolute inset-0 transition-opacity duration-700"
-          style={{ opacity: imageIndex === index ? 1 : 0 }}
+          className="absolute inset-0 transition-all duration-700"
+          style={{ opacity: imageIndex === index ? 1 : 0, transform: heroConfig.transitionType === "slide" ? "translateX(0)" : "translateX(0)" }}
         >
           <Image
             src={src || "/peak.png"}
-            alt={`${label} card image ${imageIndex + 1}`}
+            alt={`${label} image ${imageIndex + 1}`}
             fill
             sizes="(max-width: 1024px) 100vw, 50vw"
             className="h-full w-full rounded-[2rem] object-cover"
             loading={imageIndex === 0 ? "eager" : "lazy"}
+            priority={imageIndex === 0}
           />
         </div>
       ))}
@@ -78,14 +94,14 @@ export function HeroSection({ heroConfig }: HeroSectionProps) {
               </div>
             </div>
 
-            {renderCard(leftImages, "left")}
+            {renderCard("left")}
 
             <p className="max-w-xl text-lg leading-8 text-zinc-400 sm:text-xl">
               Ropa deportiva que combina tecnología, minimalismo y un lenguaje visual urbano para quienes exigen más.
             </p>
           </div>
 
-          <div>{renderCard(rightImages, "right")}</div>
+          <div>{renderCard("right")}</div>
         </div>
 
         <div className="mx-auto mt-10 flex max-w-3xl flex-wrap items-center justify-center gap-4 lg:gap-6">
