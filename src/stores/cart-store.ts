@@ -225,7 +225,7 @@ export const useCartStore = create<CartStore>()(
               size: item.size ?? "",
               color: item.color ?? "",
             });
-        } else if (isUuid(id)) {
+        } else if (isUuid(id) && !id.includes(":")) {
           await supabase.from("cart_items").delete().eq("id", id).eq("user_id", userId);
         }
 
@@ -264,7 +264,7 @@ export const useCartStore = create<CartStore>()(
                 size: item.size ?? "",
                 color: item.color ?? "",
               });
-          } else if (isUuid(id)) {
+          } else if (isUuid(id) && !id.includes(":")) {
             await supabase.from("cart_items").delete().eq("id", id).eq("user_id", userId);
           }
         } else {
@@ -288,7 +288,7 @@ export const useCartStore = create<CartStore>()(
                 size: item.size ?? "",
                 color: item.color ?? "",
               });
-          } else if (isUuid(id)) {
+          } else if (isUuid(id) && !id.includes(":")) {
             await supabase.from("cart_items").update({ quantity, updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", userId);
           }
         }

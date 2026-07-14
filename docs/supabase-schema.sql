@@ -218,17 +218,6 @@ create table if not exists public.coupons (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.banners (
-  id text primary key,
-  title text not null,
-  subtitle text not null,
-  image_url text not null,
-  href text not null default '/catalog',
-  active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -293,11 +282,6 @@ for each row execute function public.set_updated_at();
 drop trigger if exists set_coupons_updated_at on public.coupons;
 create trigger set_coupons_updated_at
 before update on public.coupons
-for each row execute function public.set_updated_at();
-
-drop trigger if exists set_banners_updated_at on public.banners;
-create trigger set_banners_updated_at
-before update on public.banners
 for each row execute function public.set_updated_at();
 
 alter table public.profiles enable row level security;
@@ -450,36 +434,14 @@ create policy "Admins can manage coupons"
   using (public.is_admin_user())
   with check (public.is_admin_user());
 
-drop policy if exists "Public can read active banners" on public.banners;
-create policy "Public can read active banners"
-  on public.banners for select
-  using (active = true or public.is_admin_user());
-
-drop policy if exists "Admins can manage banners" on public.banners;
-create policy "Admins can manage banners"
-  on public.banners for all
-  using (public.is_admin_user())
-  with check (public.is_admin_user());
-
 insert into public.coupons (id, code, label, discount, active)
 values
   ('peak10', 'PEAK10', '10% off', 10, true),
-  ('welcome20', 'WELCOME20', '20% off', 20, true)
+  ('welcome20', 'WELCOME20', 20, true)
 on conflict (id) do update
 set code = excluded.code,
     label = excluded.label,
     discount = excluded.discount,
-    active = excluded.active,
-    updated_at = now();
-
-insert into public.banners (id, title, subtitle, image_url, href, active)
-values
-  ('hero-collection', 'Nueva colección performance', 'Texturas premium y cortes pensados para moverse con intención.', '/peak.png', '/catalog', true)
-on conflict (id) do update
-set title = excluded.title,
-    subtitle = excluded.subtitle,
-    image_url = excluded.image_url,
-    href = excluded.href,
     active = excluded.active,
     updated_at = now();
 
