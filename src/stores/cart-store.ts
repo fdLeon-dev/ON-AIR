@@ -62,10 +62,14 @@ export const useCartStore = create<CartStore>()(
 
         // Try to persist to Supabase. If any DB error occurs, fall back to local update
         try {
-          // Resolve product identifier: allow storing slugs locally and resolve to UUID in DB
-          let productId = item.id;
+          // Resolve product identifier: prefer explicit productId, but support legacy and slug formats.
+          let productId = item.productId || item.id;
           const isUuid = (val: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
           if (!isUuid(productId)) {
+            if (productId.includes(":")) {
+              productId = productId.split(":")[0];
+            }
+
             const { data: prod, error: prodError } = await supabase.from("products").select("id").eq("slug", productId).maybeSingle();
             if (prod && prod.id) {
               productId = prod.id;
@@ -143,16 +147,17 @@ export const useCartStore = create<CartStore>()(
               quantity: item.quantity,
               price_snapshot: item.price,
             };
+            const onConflict = supportsVariantColumns ? "user_id,product_id,size,color" : "user_id,product_id";
             if (supportsVariantColumns) {
               insertPayload.size = item.size;
               insertPayload.color = item.color;
               insertPayload.short_description = item.shortDescription;
             }
 
-            const { error: insertError } = await supabase.from("cart_items").insert(insertPayload);
+            const { error: insertError } = await supabase.from("cart_items").upsert(insertPayload, { onConflict });
             if (isNonEmptyError(insertError)) {
               // eslint-disable-next-line no-console
-              console.warn("Supabase insert returned error (non-empty):", insertError);
+              console.warn("Supabase upsert returned error (non-empty):", insertError);
               throw insertError;
             }
           }

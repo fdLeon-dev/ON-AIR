@@ -35,8 +35,13 @@ export async function POST(request: Request) {
     .sort((a, b) => a.displayOrder - b.displayOrder)
     .map((category, index) => ({ ...category, displayOrder: index }));
 
-  await saveFeaturedCategories(nextCategories);
-  return NextResponse.json(nextCategory, { status: 201 });
+  try {
+    await saveFeaturedCategories(nextCategories);
+    return NextResponse.json(nextCategory, { status: 201 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function PATCH(request: Request) {
@@ -64,8 +69,13 @@ export async function PATCH(request: Request) {
     };
   });
 
-  await saveFeaturedCategories(nextCategories);
-  return NextResponse.json(nextCategories);
+  try {
+    await saveFeaturedCategories(nextCategories);
+    return NextResponse.json(nextCategories);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: Request) {
@@ -77,6 +87,11 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "id requerido" }, { status: 400 });
   }
 
-  await deleteFeaturedCategory(body.id);
-  return NextResponse.json({ success: true });
+  try {
+    await deleteFeaturedCategory(body.id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
