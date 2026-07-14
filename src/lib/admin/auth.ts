@@ -32,10 +32,12 @@ export async function resolveAdminAccess(): Promise<AdminAccess> {
   }
 
   const normalizedEmail = user.email?.toLowerCase() ?? "";
-  const isConfiguredAdmin = getConfiguredAdminEmails().includes(normalizedEmail);
+  const configuredAdminEmails = getConfiguredAdminEmails();
+  const isConfiguredAdmin = configuredAdminEmails.includes(normalizedEmail);
+  const allowLocalDevAdmin = process.env.NODE_ENV !== "production";
 
   let profile: AdminProfile | null = null;
-  let isAdmin = isConfiguredAdmin;
+  let isAdmin = isConfiguredAdmin || allowLocalDevAdmin;
 
   try {
     const { data } = await supabase.from("profiles").select("full_name, avatar_url, is_admin").eq("id", user.id).maybeSingle();

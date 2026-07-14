@@ -2,7 +2,6 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import type { Product, ProductCategory, ProductStatus } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Panel, formatCurrency } from "@/components/dashboard/dashboard-ui";
@@ -49,20 +48,6 @@ export function ProductManager({
     [products, search],
   );
 
-  async function uploadSelectedFiles(files: FileList | null) {
-    if (!files || files.length === 0) return [];
-    const supabase = createClient();
-    const urls: string[] = [];
-    for (const file of Array.from(files).slice(0, 4)) {
-      const safeName = `products/${Date.now()}-${file.name.replace(/[^a-z0-9.\-]/gi, "_")}`;
-      const { error } = await supabase.storage.from("productos").upload(safeName, file, { upsert: true });
-      if (error) continue;
-      const { data } = supabase.storage.from("productos").getPublicUrl(safeName);
-      urls.push(data.publicUrl);
-    }
-    return urls;
-  }
-
   const startEdit = (product: Product) => {
     setEditingId(product.id);
     setDraft({
@@ -102,7 +87,8 @@ export function ProductManager({
     setLoading(false);
 
     if (!response.ok) {
-      setMessage("No se pudo guardar el producto.");
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      setMessage(payload?.error ?? "No se pudo guardar el producto.");
       return;
     }
 
@@ -133,7 +119,8 @@ export function ProductManager({
     setLoading(false);
 
     if (!response.ok) {
-      setMessage("No se pudo crear el producto.");
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      setMessage(payload?.error ?? "No se pudo crear el producto.");
       return;
     }
 
@@ -194,32 +181,14 @@ export function ProductManager({
           <select className="rounded-full border border-white/10 bg-white/5 px-4 py-3" value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as ProductStatus }))}>
             {statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
-          <div className="grid gap-2 md:grid-cols-2">
-            <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="URL imagen 1" value={form.image1} onChange={(event) => setForm((current) => ({ ...current, image1: event.target.value }))} />
-            <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="URL imagen 2" value={form.image2} onChange={(event) => setForm((current) => ({ ...current, image2: event.target.value }))} />
-            <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="URL imagen 3" value={form.image3} onChange={(event) => setForm((current) => ({ ...current, image3: event.target.value }))} />
-            <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="URL imagen 4" value={form.image4} onChange={(event) => setForm((current) => ({ ...current, image4: event.target.value }))} />
+          <div className="grid gap-2 md:grid-cols-2 md:col-span-2">
+            <input type="url" className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="URL pública imagen 1" value={form.image1} onChange={(event) => setForm((current) => ({ ...current, image1: event.target.value }))} />
+            <input type="url" className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="URL pública imagen 2" value={form.image2} onChange={(event) => setForm((current) => ({ ...current, image2: event.target.value }))} />
+            <input type="url" className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="URL pública imagen 3" value={form.image3} onChange={(event) => setForm((current) => ({ ...current, image3: event.target.value }))} />
+            <input type="url" className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="URL pública imagen 4" value={form.image4} onChange={(event) => setForm((current) => ({ ...current, image4: event.target.value }))} />
           </div>
-          <div className="md:col-span-2">
-            <label className="text-sm text-zinc-400">Subir imágenes (hasta 4)</label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={async (event) => {
-                const urls = await uploadSelectedFiles(event.target.files);
-                if (urls.length) {
-                  setForm((current) => ({
-                    ...current,
-                    image1: urls[0] ?? "",
-                    image2: urls[1] ?? "",
-                    image3: urls[2] ?? "",
-                    image4: urls[3] ?? "",
-                  }));
-                }
-              }}
-              className="mt-2 w-full text-sm"
-            />
+          <div className="md:col-span-2 rounded-[1.25rem] border border-dashed border-white/10 bg-white/5 p-4 text-sm text-zinc-400">
+            Usa URLs públicas existentes del bucket <span className="font-semibold text-white">productos</span>. Ejemplo: <span className="break-all text-emerald-300">https://.../storage/v1/object/public/productos/mi-imagen.jpg</span>
           </div>
           <textarea className="min-h-20 rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-3 md:col-span-2" placeholder="Descripción corta" value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
           <textarea className="min-h-24 rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-3 md:col-span-2" placeholder="Descripción larga" value={form.longDescription} onChange={(event) => setForm((current) => ({ ...current, longDescription: event.target.value }))} />

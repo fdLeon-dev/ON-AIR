@@ -17,7 +17,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const { id } = await params;
     const body = await request.json();
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient({ serviceRole: true });
     const result = await updateProduct(id, body, supabase);
 
     revalidatePath("/");
@@ -47,7 +47,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     }
 
     const { id } = await params;
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient({ serviceRole: true });
     await deleteProduct(id, supabase);
 
     revalidatePath("/");

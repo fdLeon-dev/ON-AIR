@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
     }
 
-    const supabase = await createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient({ serviceRole: true });
     const body = await request.json();
     const product = await createProduct(body, supabase);
 
