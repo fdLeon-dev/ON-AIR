@@ -26,29 +26,33 @@ export async function POST(request: Request) {
     product_id: string;
     quantity: number;
     price_at_purchase: number;
+    size?: string;
+    color?: string;
+    short_description?: string;
   }> = [];
 
-  const isUuid = (value: string) => /^[0-9a-fA-F-]{36}$/.test(value);
+  const isUuid = (value: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(value);
 
-  for (const item of body.items as Array<{ id: string; quantity: number }>) {
+  for (const item of body.items as Array<{ id?: string; productId?: string; quantity: number; size?: string; color?: string; shortDescription?: string }>) {
     const quantity = Number(item.quantity);
-    if (!item.id || !Number.isFinite(quantity) || quantity <= 0) {
+    const itemRef = item.productId ?? item.id;
+    if (!itemRef || !Number.isFinite(quantity) || quantity <= 0) {
       return NextResponse.json({ error: "Cada item del carrito debe tener id y cantidad válidos" }, { status: 400 });
     }
 
-    const productQuery = isUuid(item.id)
-      ? supabase.from("products").select("id, price, offer_price").eq("id", item.id)
-      : supabase.from("products").select("id, price, offer_price").eq("slug", item.id);
+    const productQuery = isUuid(itemRef)
+      ? supabase.from("products").select("id, price, offer_price").eq("id", itemRef)
+      : supabase.from("products").select("id, price, offer_price").eq("slug", itemRef);
 
     const { data: product, error: productError } = await productQuery.maybeSingle();
 
     if (productError || !product) {
-      return NextResponse.json({ error: `Producto no encontrado en la base de datos: ${item.id}` }, { status: 400 });
+      return NextResponse.json({ error: `Producto no encontrado en la base de datos: ${itemRef}` }, { status: 400 });
     }
 
     const priceAtPurchase = Number(product.offer_price ?? product.price ?? 0);
     if (!Number.isFinite(priceAtPurchase) || priceAtPurchase < 0) {
-      return NextResponse.json({ error: `Precio inválido para el producto: ${item.id}` }, { status: 400 });
+      return NextResponse.json({ error: `Precio inválido para el producto: ${itemRef}` }, { status: 400 });
     }
 
     orderItems.push({
@@ -56,6 +60,9 @@ export async function POST(request: Request) {
       product_id: product.id,
       quantity,
       price_at_purchase: priceAtPurchase,
+      size: item.size,
+      color: item.color,
+      short_description: item.shortDescription,
     });
   }
 

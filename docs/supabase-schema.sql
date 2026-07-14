@@ -82,9 +82,12 @@ create table if not exists public.cart_items (
   product_id uuid not null references public.products(id) on delete cascade,
   quantity integer not null default 1 check (quantity > 0),
   price_snapshot numeric(12,2) not null default 0,
+  size text,
+  color text,
+  short_description text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  unique(user_id, product_id)
+  unique(user_id, product_id, size, color)
 );
 
 create table if not exists public.orders (
@@ -104,6 +107,9 @@ create table if not exists public.order_items (
   product_id uuid not null references public.products(id) on delete cascade,
   quantity integer not null default 1 check (quantity > 0),
   price_at_purchase numeric(12,2) not null default 0,
+  size text,
+  color text,
+  short_description text,
   created_at timestamptz not null default now()
 );
 

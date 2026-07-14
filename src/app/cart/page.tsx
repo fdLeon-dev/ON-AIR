@@ -37,6 +37,8 @@ export default function CartPage() {
                       <div>
                         <p className="font-medium text-white">{item.name}</p>
                         {item.size ? <p className="mt-1 text-sm text-emerald-300">Talle: {item.size}</p> : null}
+                        {item.color ? <p className="mt-1 text-sm text-emerald-300">Color: {item.color}</p> : null}
+                        {item.shortDescription ? <p className="mt-1 text-sm text-zinc-400">{item.shortDescription}</p> : null}
                         <p className="mt-1 text-sm text-zinc-400">{formatCurrency(item.price)}</p>
                       </div>
                     </div>

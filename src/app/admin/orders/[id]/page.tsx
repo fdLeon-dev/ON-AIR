@@ -17,6 +17,9 @@ type OrderDetail = {
   order_items?: {
     quantity: number;
     price_at_purchase: number;
+    size?: string;
+    color?: string;
+    short_description?: string;
     products?: {
       slug?: string;
       name?: string;
@@ -47,7 +50,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
   const { data, error } = await supabase
     .from("orders")
     .select(
-      `id, status, total, payment_status, created_at, shipping_address, user_id, profiles(full_name), order_items(quantity, price_at_purchase, products(slug, name, image1, image2, image3, image4)), order_histories(id, old_status, new_status, notes, created_at, profiles(full_name))`,
+      `id, status, total, payment_status, created_at, shipping_address, user_id, profiles(full_name), order_items(quantity, price_at_purchase, size, color, short_description, products(slug, name, image1, image2, image3, image4)), order_histories(id, old_status, new_status, notes, created_at, profiles(full_name))`,
     )
     .eq("id", id)
     .single();
@@ -115,11 +118,16 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
               const product = item.products?.[0];
               const image = product?.image1 ?? product?.image2 ?? product?.image3 ?? product?.image4 ?? "";
               return (
-                <div key={`${order.id}-${index}`} className="flex items-center gap-4 rounded-[1.5rem] border border-white/10 bg-white/5 p-4">
-                  {image ? <img src={image} alt={product?.name ?? "Producto"} className="h-16 w-16 rounded-2xl object-cover" /> : <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-zinc-900 text-xs text-zinc-400">No img</div>}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-white">{product?.name ?? "Producto"}</p>
-                    <p className="text-sm text-zinc-400">{item.quantity} unidades · {formatCurrency(item.price_at_purchase)}</p>
+                <div key={`${order.id}-${index}`} className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-4">
+                    {image ? <img src={image} alt={product?.name ?? "Producto"} className="h-16 w-16 rounded-2xl object-cover" /> : <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-zinc-900 text-xs text-zinc-400">No img</div>}
+                    <div>
+                      <p className="font-medium text-white">{product?.name ?? "Producto"}</p>
+                      <p className="text-sm text-zinc-400">{item.quantity} unidades · {formatCurrency(item.price_at_purchase)}</p>
+                      {item.size ? <p className="mt-1 text-sm text-emerald-300">Talle: {item.size}</p> : null}
+                      {item.color ? <p className="mt-1 text-sm text-emerald-300">Color: {item.color}</p> : null}
+                      {item.short_description ? <p className="mt-1 text-sm text-zinc-400">{item.short_description}</p> : null}
+                    </div>
                   </div>
                   <div className="text-sm text-zinc-300">{formatCurrency(item.quantity * item.price_at_purchase)}</div>
                 </div>
