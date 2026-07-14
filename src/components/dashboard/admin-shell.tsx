@@ -14,7 +14,6 @@ import {
   LogOut,
   Menu,
   Package2,
-  PanelTop,
   Percent,
   Search,
   Settings2,
@@ -46,7 +45,6 @@ const navigation: AdminNavigationItem[] = [
   { label: "Clientes", href: "/admin/customers", icon: <Users className="h-4 w-4" />, description: "Usuarios y compras" },
   { label: "Cupones", href: "/admin/coupons", icon: <CircleDollarSign className="h-4 w-4" />, description: "Promociones" },
   { label: "Categorías destacadas", href: "/admin/featured-categories", icon: <BarChart3 className="h-4 w-4" />, description: "Colecciones de la página principal" },
-  { label: "Banners", href: "/admin/banners", icon: <PanelTop className="h-4 w-4" />, description: "Hero y campañas" },
   { label: "Configuración", href: "/admin/settings", icon: <Settings2 className="h-4 w-4" />, description: "Ajustes globales" },
   { label: "Perfil", href: "/admin/profile", icon: <UserCircle2 className="h-4 w-4" />, description: "Cuenta admin" },
 ];

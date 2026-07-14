@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     await saveFeaturedCategories(nextCategories);
     return NextResponse.json(nextCategory, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error ? error.message : typeof error === "string" ? error : JSON.stringify(error, Object.getOwnPropertyNames(error));
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -73,7 +73,7 @@ export async function PATCH(request: Request) {
     await saveFeaturedCategories(nextCategories);
     return NextResponse.json(nextCategories);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error ? error.message : typeof error === "string" ? error : JSON.stringify(error, Object.getOwnPropertyNames(error));
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -91,7 +91,7 @@ export async function DELETE(request: Request) {
     await deleteFeaturedCategory(body.id);
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error ? error.message : typeof error === "string" ? error : JSON.stringify(error, Object.getOwnPropertyNames(error));
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

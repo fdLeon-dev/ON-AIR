@@ -16,7 +16,7 @@ export default async function AdminDashboardPage() {
           <p className="text-sm uppercase tracking-[0.35em] text-emerald-200/80">Peak Sport Admin</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Controlamos la operación desde un panel moderno y simple.</h1>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-300">
-            Esta nueva base reemplaza el panel anterior y centraliza productos, pedidos, clientes, cupones, banners y configuración de tienda.
+            Esta nueva base reemplaza el panel anterior y centraliza productos, pedidos, clientes, cupones y configuración de tienda.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <a href="/admin/products" className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-black">

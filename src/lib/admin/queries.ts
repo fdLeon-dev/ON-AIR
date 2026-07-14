@@ -1,7 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { loadProducts } from "@/lib/data/persistence";
 import { loadCoupons } from "@/lib/data/coupons";
-import { loadBanners } from "@/lib/data/banners";
 import { loadStoreSettings } from "@/lib/data/store-settings";
 
 export type AdminOrderSummary = {
@@ -24,10 +23,9 @@ export type RevenuePoint = {
 
 export async function loadAdminOverview() {
   const supabase = await createServerSupabaseClient();
-  const [products, coupons, banners, settings, ordersResponse, profilesResponse] = await Promise.all([
+  const [products, coupons, settings, ordersResponse, profilesResponse] = await Promise.all([
     loadProducts(),
     loadCoupons(),
-    loadBanners(),
     loadStoreSettings(),
     supabase.from("orders").select("id, status, total, payment_status, created_at, user_id, profiles(full_name)").order("created_at", { ascending: false }),
     supabase.from("profiles").select("id, full_name, avatar_url, is_admin, created_at").order("created_at", { ascending: false }),
@@ -81,7 +79,6 @@ export async function loadAdminOverview() {
   return {
     products,
     coupons,
-    banners,
     settings,
     orders,
     customers: Array.from(customerMap.entries())
