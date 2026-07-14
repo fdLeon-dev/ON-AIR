@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { products as fallbackProducts } from "@/lib/data/products";
-import type { HeroConfig, Product, ProductCategory, ProductStatus } from "@/types";
+import type { FeaturedCategory, HeroConfig, Product, ProductCategory, ProductStatus } from "@/types";
 
 const STORAGE_BUCKET = "productos";
 const STORAGE_PRODUCTS_OBJECT = "app-data/products.json";
@@ -317,6 +317,70 @@ export async function saveHeroConfig(config: Partial<HeroConfig>) {
     await writeRemoteJson(STORAGE_HERO_OBJECT, nextConfig);
     return nextConfig;
   }
+}
+
+function normalizeFeaturedCategory(raw: Record<string, unknown>): FeaturedCategory {
+  return {
+    id: String(raw.id ?? raw.id ?? crypto.randomUUID()),
+    name: String(raw.name ?? "").trim(),
+    slug: String(raw.slug ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+    description: String(raw.description ?? "").trim(),
+    imageUrl: String(raw.image_url ?? raw.imageUrl ?? "").trim(),
+    displayOrder: Number(raw.display_order ?? raw.displayOrder ?? 0),
+    isActive: Boolean(raw.is_active ?? raw.isActive ?? true),
+    createdAt: String(raw.created_at ?? raw.createdAt ?? new Date().toISOString()),
+    updatedAt: String(raw.updated_at ?? raw.updatedAt ?? new Date().toISOString()),
+  };
+}
+
+export async function loadFeaturedCategories(useFallback = true): Promise<FeaturedCategory[]> {
+  try {
+    const supabase = await getSessionSupabase();
+    const { data, error } = await supabase.from("featured_categories").select("*").order("display_order", { ascending: true });
+    if (!error && Array.isArray(data)) {
+      return data.map((row) => normalizeFeaturedCategory(row as Record<string, unknown>));
+    }
+  } catch {
+    /* ignore */
+  }
+
+  if (!useFallback) {
+    return [];
+  }
+
+  return [];
+}
+
+export async function saveFeaturedCategories(categories: FeaturedCategory[]) {
+  const nextCategories = categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    description: category.description,
+    image_url: category.imageUrl,
+    display_order: category.displayOrder,
+    is_active: category.isActive,
+    created_at: category.createdAt,
+    updated_at: new Date().toISOString(),
+  }));
+
+  const supabase = await getServiceSupabase();
+  const { error } = await supabase.from("featured_categories").upsert(nextCategories, { onConflict: "id" });
+  if (error) {
+    throw error;
+  }
+
+  return categories;
+}
+
+export async function deleteFeaturedCategory(id: string) {
+  const supabase = await getServiceSupabase();
+  const { error } = await supabase.from("featured_categories").delete().eq("id", id);
+  if (error) {
+    throw error;
+  }
+
+  return { success: true };
 }
 
 type SupabaseClientLike = Awaited<ReturnType<typeof createServerSupabaseClient>>;

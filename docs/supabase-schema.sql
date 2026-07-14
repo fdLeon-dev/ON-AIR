@@ -150,6 +150,18 @@ create table if not exists public.store_settings (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.featured_categories (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  slug text not null unique,
+  description text not null,
+  image_url text not null,
+  display_order integer not null default 0,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.coupons (
   id text primary key,
   code text not null unique,

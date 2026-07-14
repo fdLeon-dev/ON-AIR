@@ -47,6 +47,18 @@ export interface Category {
   image: string;
 }
 
+export interface FeaturedCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  imageUrl: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Review {
   id: string;
   author: string;
