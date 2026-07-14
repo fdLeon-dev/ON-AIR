@@ -50,7 +50,7 @@ export const useCartStore = create<CartStore>()(
         try {
           // Resolve product identifier: allow storing slugs locally and resolve to UUID in DB
           let productId = item.id;
-          const isUuid = (val: string) => /^[0-9a-fA-F-]{36}$/.test(val);
+          const isUuid = (val: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
           if (!isUuid(productId)) {
             const { data: prod, error: prodError } = await supabase.from("products").select("id").eq("slug", productId).maybeSingle();
             if (prod && prod.id) {
@@ -245,7 +245,7 @@ export const useCartStore = create<CartStore>()(
         const localItems = get().items;
         if (!localItems || localItems.length === 0) return;
 
-        const isUuid = (val: string) => /^[0-9a-fA-F-]{36}$/.test(val);
+        const isUuid = (val: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
 
         for (const item of localItems) {
           try {

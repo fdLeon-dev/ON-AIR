@@ -21,6 +21,26 @@ function slugify(value: string) {
     .replace(/(^-|-$)/g, "");
 }
 
+function validateCategories(categories: FeaturedCategory[]) {
+  const duplicateSlug = categories
+    .map((category) => category.slug.trim().toLowerCase())
+    .filter(Boolean)
+    .reduce<Record<string, number>>((acc, slug) => {
+      acc[slug] = (acc[slug] ?? 0) + 1;
+      return acc;
+    }, {});
+
+  for (const category of categories) {
+    if (!category.name.trim()) return "Cada categoría debe tener un nombre.";
+    if (!category.description.trim()) return "Cada categoría debe tener una descripción.";
+    if (!category.imageUrl.trim()) return "Cada categoría debe tener una URL de imagen.";
+    if (!category.slug.trim()) return "Cada categoría debe tener un slug válido.";
+    if (duplicateSlug[category.slug.trim().toLowerCase()] > 1) return "Los slugs deben ser únicos.";
+  }
+
+  return null;
+}
+
 export function FeaturedCategoriesManager({ initialCategories }: { initialCategories: FeaturedCategory[] }) {
   const [categories, setCategories] = useState(initialCategories);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -68,12 +88,20 @@ export function FeaturedCategoriesManager({ initialCategories }: { initialCatego
   };
 
   const persistCategories = async (nextCategories: FeaturedCategory[]) => {
+    const validationError = validateCategories(nextCategories);
+    if (validationError) {
+      setError(validationError);
+      setMessage(null);
+      return false;
+    }
+
     setSaving(true);
     setError(null);
     setMessage(null);
     try {
       const response = await fetch("/api/admin/featured-categories", {
         method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ categories: nextCategories }),
       });
@@ -121,6 +149,13 @@ export function FeaturedCategoriesManager({ initialCategories }: { initialCatego
       .sort((a, b) => a.displayOrder - b.displayOrder)
       .map((category, index) => ({ ...category, displayOrder: index }));
 
+    const listValidationError = validateCategories(nextCategories);
+    if (listValidationError) {
+      setError(listValidationError);
+      setMessage(null);
+      return;
+    }
+
     const saved = await persistCategories(nextCategories);
     if (saved) resetForm();
   };
@@ -134,6 +169,7 @@ export function FeaturedCategoriesManager({ initialCategories }: { initialCatego
     try {
       const response = await fetch("/api/admin/featured-categories", {
         method: "DELETE",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
