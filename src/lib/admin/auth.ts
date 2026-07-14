@@ -38,12 +38,18 @@ export async function resolveAdminAccess(): Promise<AdminAccess> {
   let isAdmin = isConfiguredAdmin;
 
   try {
-    const serviceSupabase = await createServerSupabaseClient({ serviceRole: true });
-    const { data } = await serviceSupabase.from("profiles").select("full_name, avatar_url, is_admin").eq("id", user.id).maybeSingle();
+    const { data } = await supabase.from("profiles").select("full_name, avatar_url, is_admin").eq("id", user.id).maybeSingle();
     profile = data ?? null;
     isAdmin = isAdmin || Boolean(data?.is_admin);
   } catch {
-    profile = null;
+    try {
+      const serviceSupabase = await createServerSupabaseClient({ serviceRole: true });
+      const { data } = await serviceSupabase.from("profiles").select("full_name, avatar_url, is_admin").eq("id", user.id).maybeSingle();
+      profile = data ?? null;
+      isAdmin = isAdmin || Boolean(data?.is_admin);
+    } catch {
+      profile = null;
+    }
   }
 
   return { user, profile, isAdmin };

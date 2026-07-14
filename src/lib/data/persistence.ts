@@ -17,6 +17,10 @@ async function getServiceSupabase() {
   return createServerSupabaseClient({ serviceRole: true });
 }
 
+async function getSessionSupabase() {
+  return createServerSupabaseClient();
+}
+
 function getImageFields(raw: Record<string, unknown>): [string, string, string, string] {
   const images = Array.isArray(raw?.images) ? raw.images : [];
   return [
@@ -121,7 +125,7 @@ async function writeRemoteJson(objectPath: string, value: unknown) {
 
 export async function loadProducts(): Promise<Product[]> {
   try {
-    const supabase = await getServiceSupabase();
+    const supabase = await getSessionSupabase();
     const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
     if (!error && Array.isArray(data)) {
       return data.map(normalizeProduct);
@@ -192,7 +196,7 @@ function normalizeHeroImages(images: unknown): string[] {
 
 export async function loadHeroConfig(): Promise<HeroConfig> {
   try {
-    const supabase = await getServiceSupabase();
+    const supabase = await getSessionSupabase();
     const { data, error } = await supabase.from("hero_config").select("*").eq("config_key", "default").single();
     if (!error && data) {
       return {
@@ -232,7 +236,7 @@ export async function saveHeroConfig(config: Partial<HeroConfig>) {
   };
 
   try {
-    const supabase = await getServiceSupabase();
+    const supabase = await getSessionSupabase();
     await supabase.from("hero_config").upsert(
       {
         config_key: "default",
@@ -251,7 +255,12 @@ export async function saveHeroConfig(config: Partial<HeroConfig>) {
   }
 }
 
-export async function createProduct(input: Partial<Product> & Pick<Product, "name" | "brand" | "category" | "price">) {
+type SupabaseClientLike = Awaited<ReturnType<typeof createServerSupabaseClient>>;
+
+export async function createProduct(
+  input: Partial<Product> & Pick<Product, "name" | "brand" | "category" | "price">,
+  supabaseClient?: SupabaseClientLike,
+) {
   const [image1, image2, image3, image4] = getImageFields(input);
   const hasImages = Boolean(image1 || image2 || image3 || image4);
   const product: Product = {
@@ -284,7 +293,7 @@ export async function createProduct(input: Partial<Product> & Pick<Product, "nam
     updatedAt: new Date().toISOString(),
   };
 
-  const supabase = await getServiceSupabase();
+  const supabase = supabaseClient ?? (await getServiceSupabase());
   const { data, error } = await supabase
     .from("products")
     .insert(
@@ -330,7 +339,7 @@ export async function createProduct(input: Partial<Product> & Pick<Product, "nam
   return normalizeProduct(data);
 }
 
-export async function updateProduct(id: string, updates: Partial<Product>) {
+export async function updateProduct(id: string, updates: Partial<Product>, supabaseClient?: SupabaseClientLike) {
   const rawUpdates: Record<string, unknown> = { ...(updates as Record<string, unknown>) };
   const imageKeysPresent =
     "image1" in rawUpdates ||
@@ -380,15 +389,15 @@ export async function updateProduct(id: string, updates: Partial<Product>) {
     updated_at: new Date().toISOString(),
   };
 
-  const supabase = await getServiceSupabase();
+  const supabase = supabaseClient ?? (await getServiceSupabase());
   const { data, error } = await supabase.from("products").update(updatePayload).eq("id", id).select("*").single();
 
   if (error || !data) throw error ?? new Error("Failed to update product");
   return normalizeProduct(data);
 }
 
-export async function deleteProduct(id: string) {
-  const supabase = await getServiceSupabase();
+export async function deleteProduct(id: string, supabaseClient?: SupabaseClientLike) {
+  const supabase = supabaseClient ?? (await getServiceSupabase());
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw error;
   return { success: true };

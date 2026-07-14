@@ -31,12 +31,12 @@ export async function GET() {
   let isAdmin = isConfiguredAdmin;
 
   try {
-    const serviceSupabase = await createServerSupabaseClient({ serviceRole: true });
-    const { data: profileData } = await serviceSupabase.from("profiles").select("full_name, is_admin").eq("id", user.id).maybeSingle();
+    const sessionSupabase = await createServerSupabaseClient();
+    const { data: profileData } = await sessionSupabase.from("profiles").select("full_name, is_admin").eq("id", user.id).maybeSingle();
     profile = profileData;
     isAdmin = isAdmin || Boolean(profileData?.is_admin);
 
-    const { data: ordersData, error: ordersError } = await serviceSupabase
+    const { data: ordersData, error: ordersError } = await sessionSupabase
       .from("orders")
       .select("id, status, total, created_at")
       .eq("user_id", user.id)

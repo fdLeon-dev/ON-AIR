@@ -31,7 +31,7 @@ function normalizeList(values: unknown, fallback: string[]) {
 }
 
 export async function loadStoreSettings(): Promise<StoreSettings> {
-  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const supabase = await createServerSupabaseClient();
   const { data } = await supabase.from(TABLE_NAME).select("*").eq("singleton_key", "default").maybeSingle();
   if (!data) return defaultStoreSettings;
 
@@ -60,7 +60,7 @@ export async function saveStoreSettings(settings: Partial<StoreSettings>) {
     featuredNote: typeof settings.featuredNote === "string" ? settings.featuredNote : current.featuredNote,
   };
 
-  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const supabase = await createServerSupabaseClient();
   const { error } = await supabase.from(TABLE_NAME).upsert(
     {
       singleton_key: "default",

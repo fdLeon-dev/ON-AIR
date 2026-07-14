@@ -23,7 +23,7 @@ export type RevenuePoint = {
 };
 
 export async function loadAdminOverview() {
-  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const supabase = await createServerSupabaseClient();
   const [products, coupons, banners, settings, ordersResponse, profilesResponse] = await Promise.all([
     loadProducts(),
     loadCoupons(),
@@ -95,7 +95,7 @@ export async function loadAdminOverview() {
 }
 
 export async function loadAdminOrders() {
-  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("orders")
     .select(`id, status, total, payment_status, created_at, user_id, profiles(full_name)`)
@@ -105,7 +105,7 @@ export async function loadAdminOrders() {
 }
 
 export async function loadAdminCustomers() {
-  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.from("profiles").select("id, full_name, avatar_url, is_admin, created_at").order("created_at", { ascending: false });
   return { customers: data ?? [], error };
 }

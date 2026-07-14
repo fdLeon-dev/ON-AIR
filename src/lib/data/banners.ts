@@ -34,14 +34,14 @@ function mapRowToBanner(row: Record<string, unknown>): StoreBanner {
 }
 
 export async function loadBanners(): Promise<StoreBanner[]> {
-  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.from(TABLE_NAME).select("*").order("created_at", { ascending: false });
   if (error || !Array.isArray(data) || data.length === 0) return defaultBanners;
   return data.map((row) => mapRowToBanner(row as Record<string, unknown>));
 }
 
 export async function saveBanners(banners: StoreBanner[]) {
-  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const supabase = await createServerSupabaseClient();
   const rows = banners.map((banner) => ({
     id: banner.id,
     title: banner.title,

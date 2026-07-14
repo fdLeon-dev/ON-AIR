@@ -28,14 +28,14 @@ function mapRowToCoupon(row: Record<string, unknown>): Coupon {
 }
 
 export async function loadCoupons(): Promise<Coupon[]> {
-  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase.from(TABLE_NAME).select("*").order("created_at", { ascending: false });
   if (error || !Array.isArray(data) || data.length === 0) return defaultCoupons;
   return data.map((row) => mapRowToCoupon(row as Record<string, unknown>));
 }
 
 export async function saveCoupons(coupons: Coupon[]) {
-  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const supabase = await createServerSupabaseClient();
   const rows = coupons.map((coupon) => ({
     id: coupon.id,
     code: coupon.code.toUpperCase(),

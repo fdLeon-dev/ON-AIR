@@ -363,6 +363,11 @@ create policy "Admins can manage hero config"
   using (public.is_admin_user())
   with check (public.is_admin_user());
 
+drop policy if exists "Public can read hero config" on public.hero_config;
+create policy "Public can read hero config"
+  on public.hero_config for select
+  using (true);
+
 drop policy if exists "Admins can manage store settings" on public.store_settings;
 create policy "Admins can manage store settings"
   on public.store_settings for all

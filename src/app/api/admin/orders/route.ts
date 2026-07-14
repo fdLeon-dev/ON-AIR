@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveAdminAccess } from "@/lib/admin/auth";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function PATCH(request: Request) {
@@ -10,25 +11,16 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "orderId y status son requeridos" }, { status: 400 });
   }
 
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { user, isAdmin } = await resolveAdminAccess();
   if (!user) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .single();
-
-  if (profileError || !profile?.is_admin) {
+  if (!isAdmin) {
     return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
   }
 
+  const supabase = await createServerSupabaseClient();
   const { data: existingOrder, error: readError } = await supabase
     .from("orders")
     .select("status")
