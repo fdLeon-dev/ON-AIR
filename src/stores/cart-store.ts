@@ -24,6 +24,17 @@ interface CartStore {
   mergeLocalToSupabase: () => Promise<void>;
 }
 
+function getLegacyCartColumns(selectFallback = false) {
+  return selectFallback
+    ? "id, product_id, quantity, price_snapshot"
+    : "id, product_id, quantity, price_snapshot, size, color, short_description";
+}
+
+function usesVariantColumns(error: any) {
+  const message = error?.message ?? String(error ?? "");
+  return /column\s+(?:"?cart_items\.\"?)?(?:size|color|short_description)\"?\s+does not exist/i.test(message);
+}
+
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
@@ -66,7 +77,7 @@ export const useCartStore = create<CartStore>()(
             }
           }
 
-          const { data: existing, error: existingError } = await supabase
+          let existingResponse = await supabase
             .from("cart_items")
             .select("id, quantity")
             .match({
@@ -77,6 +88,17 @@ export const useCartStore = create<CartStore>()(
             })
             .maybeSingle();
 
+          let supportsVariantColumns = true;
+          if (existingResponse.error && usesVariantColumns(existingResponse.error)) {
+            supportsVariantColumns = false;
+            existingResponse = await supabase
+              .from("cart_items")
+              .select("id, quantity")
+              .match({ user_id: userId, product_id: productId })
+              .maybeSingle();
+          }
+
+          const existing = existingResponse.data;
           const isNonEmptyError = (e: any) => {
             try {
               if (!e) return false;
@@ -89,42 +111,45 @@ export const useCartStore = create<CartStore>()(
             }
           };
 
-          if (isNonEmptyError(existingError)) {
+          if (isNonEmptyError(existingResponse.error)) {
             // Log but don't throw raw empty error objects
             // eslint-disable-next-line no-console
-            console.warn("Supabase existing check returned error:", existingError);
-            throw existingError;
+            console.warn("Supabase existing check returned error:", existingResponse.error);
+            throw existingResponse.error;
           }
 
           if (existing) {
-            const { error: updateError } = await supabase
-              .from("cart_items")
-              .update({
-                quantity: existing.quantity + item.quantity,
-                price_snapshot: item.price,
-                size: item.size,
-                color: item.color,
-                short_description: item.shortDescription,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", existing.id);
+            const updatePayload: Record<string, unknown> = {
+              quantity: existing.quantity + item.quantity,
+              price_snapshot: item.price,
+              updated_at: new Date().toISOString(),
+            };
+            if (supportsVariantColumns) {
+              updatePayload.size = item.size;
+              updatePayload.color = item.color;
+              updatePayload.short_description = item.shortDescription;
+            }
 
+            const { error: updateError } = await supabase.from("cart_items").update(updatePayload).eq("id", existing.id);
             if (isNonEmptyError(updateError)) {
               // eslint-disable-next-line no-console
               console.warn("Supabase update returned error (non-empty):", updateError);
               throw updateError;
             }
           } else {
-            const { error: insertError } = await supabase.from("cart_items").insert({
+            const insertPayload: Record<string, unknown> = {
               user_id: userId,
               product_id: productId,
               quantity: item.quantity,
               price_snapshot: item.price,
-              size: item.size,
-              color: item.color,
-              short_description: item.shortDescription,
-            });
+            };
+            if (supportsVariantColumns) {
+              insertPayload.size = item.size;
+              insertPayload.color = item.color;
+              insertPayload.short_description = item.shortDescription;
+            }
 
+            const { error: insertError } = await supabase.from("cart_items").insert(insertPayload);
             if (isNonEmptyError(insertError)) {
               // eslint-disable-next-line no-console
               console.warn("Supabase insert returned error (non-empty):", insertError);
@@ -203,11 +228,19 @@ export const useCartStore = create<CartStore>()(
         }
 
         try {
-          const { data, error } = await supabase
+          let response = await supabase
             .from("cart_items")
-            .select("id, product_id, quantity, price_snapshot, size, color, short_description")
+            .select(getLegacyCartColumns())
             .eq("user_id", userId);
 
+          if (response.error && usesVariantColumns(response.error)) {
+            response = await supabase
+              .from("cart_items")
+              .select(getLegacyCartColumns(true))
+              .eq("user_id", userId);
+          }
+
+          const { data, error } = response;
           if (error) {
             const message = error.message ?? "Unknown error";
             // eslint-disable-next-line no-console
@@ -287,7 +320,7 @@ export const useCartStore = create<CartStore>()(
               }
             }
 
-            const { data: existing } = await supabase
+            let response = await supabase
               .from("cart_items")
               .select("id, quantity")
               .match({
@@ -298,28 +331,44 @@ export const useCartStore = create<CartStore>()(
               })
               .maybeSingle();
 
-            if (existing) {
-              await supabase
+            if (response.error && usesVariantColumns(response.error)) {
+              response = await supabase
                 .from("cart_items")
-                .update({
-                  quantity: existing.quantity + item.quantity,
-                  price_snapshot: item.price,
-                  size: item.size,
-                  color: item.color,
-                  short_description: item.shortDescription,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq("id", existing.id);
+                .select("id, quantity")
+                .match({ user_id: userId, product_id: productUuid })
+                .maybeSingle();
+            }
+
+            const existing = response.data;
+            if (existing) {
+              const updatePayload: Record<string, unknown> = {
+                quantity: existing.quantity + item.quantity,
+                price_snapshot: item.price,
+                updated_at: new Date().toISOString(),
+              };
+
+              if (!usesVariantColumns(response.error)) {
+                updatePayload.size = item.size;
+                updatePayload.color = item.color;
+                updatePayload.short_description = item.shortDescription;
+              }
+
+              await supabase.from("cart_items").update(updatePayload).eq("id", existing.id);
             } else {
-              await supabase.from("cart_items").insert({
+              const insertPayload: Record<string, unknown> = {
                 user_id: userId,
                 product_id: productUuid,
                 quantity: item.quantity,
                 price_snapshot: item.price,
-                size: item.size,
-                color: item.color,
-                short_description: item.shortDescription,
-              });
+              };
+
+              if (!usesVariantColumns(response.error)) {
+                insertPayload.size = item.size;
+                insertPayload.color = item.color;
+                insertPayload.short_description = item.shortDescription;
+              }
+
+              await supabase.from("cart_items").insert(insertPayload);
             }
           } catch (err) {
             // eslint-disable-next-line no-console

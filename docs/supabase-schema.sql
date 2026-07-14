@@ -90,6 +90,10 @@ create table if not exists public.cart_items (
   unique(user_id, product_id, size, color)
 );
 
+alter table public.cart_items add column if not exists size text;
+alter table public.cart_items add column if not exists color text;
+alter table public.cart_items add column if not exists short_description text;
+
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -112,6 +116,10 @@ create table if not exists public.order_items (
   short_description text,
   created_at timestamptz not null default now()
 );
+
+alter table public.order_items add column if not exists size text;
+alter table public.order_items add column if not exists color text;
+alter table public.order_items add column if not exists short_description text;
 
 create table if not exists public.order_histories (
   id uuid primary key default gen_random_uuid(),
