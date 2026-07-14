@@ -90,6 +90,7 @@ export function ProductManager({
 
     const response = await fetch(`/api/products/${product.id}`, {
       method: "PATCH",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...draft,
@@ -119,6 +120,7 @@ export function ProductManager({
 
     const response = await fetch("/api/products/create", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
@@ -158,7 +160,7 @@ export function ProductManager({
   const handleDelete = async (product: Product) => {
     if (!window.confirm(`¿Eliminar ${product.name}?`)) return;
     setLoading(true);
-    const response = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
+    const response = await fetch(`/api/products/${product.id}`, { method: "DELETE", credentials: "include" });
     setLoading(false);
 
     if (!response.ok) {
