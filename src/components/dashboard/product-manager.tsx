@@ -22,7 +22,7 @@ export function ProductManager({
   const [message, setMessage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<(Partial<Product> & { sizesInput?: string; sizeStockInput?: string }) | null>(null);
+  const [draft, setDraft] = useState<(Partial<Product> & { sizesInput?: string; sizeStockInput?: string; colorsInput?: string }) | null>(null);
   const [form, setForm] = useState({
     name: "",
     brand: brandOptions[0] ?? "Peak Sport",
@@ -32,6 +32,7 @@ export function ProductManager({
     stock: "10",
     sizesInput: "S, M, L",
     sizeStockInput: "10, 8, 5",
+    colorsInput: "Negro",
     status: "Nuevo" as ProductStatus,
     description: "",
     longDescription: "",
@@ -42,6 +43,10 @@ export function ProductManager({
   });
 
   const parseSizesInput = (value: string) => value.split(",").map((entry) => entry.trim()).filter(Boolean);
+  const parseColorsInput = (value: string) => {
+    const colors = value.split(",").map((entry) => entry.trim()).filter(Boolean);
+    return colors.length > 0 ? colors : [];
+  };
 
   const parseSizeStockInput = (value: string, sizes: string[]) => {
     const parsedValues = value.split(",").map((entry) => Number(entry.trim())).filter((entry) => Number.isFinite(entry));
@@ -87,6 +92,7 @@ export function ProductManager({
       sizeStock: product.sizeStock,
       sizesInput: product.sizes.join(", "),
       sizeStockInput: product.sizes.map((size) => product.sizeStock?.[size] ?? 0).join(", "),
+      colorsInput: product.colors.join(", "),
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -96,8 +102,9 @@ export function ProductManager({
     setLoading(true);
     setMessage(null);
 
-    const { sizesInput = "", sizeStockInput = "", ...restDraft } = draft;
+    const { sizesInput = "", sizeStockInput = "", colorsInput = "", ...restDraft } = draft;
     const { sizes, sizeStock, totalStock } = buildSizePayload(sizesInput, sizeStockInput);
+    const colors = parseColorsInput(colorsInput);
     const response = await fetch(`/api/products/${product.id}`, {
       method: "PATCH",
       credentials: "include",
@@ -106,6 +113,7 @@ export function ProductManager({
         ...restDraft,
         sizes,
         sizeStock,
+        colors,
         price: Number(draft.price),
         stock: totalStock || Number(draft.stock ?? 0),
       }),
@@ -131,8 +139,9 @@ export function ProductManager({
     setLoading(true);
     setMessage(null);
 
-    const { sizesInput, sizeStockInput, ...restForm } = form;
+    const { sizesInput, sizeStockInput, colorsInput, ...restForm } = form;
     const { sizes, sizeStock, totalStock } = buildSizePayload(sizesInput, sizeStockInput);
+    const colors = parseColorsInput(colorsInput);
     const response = await fetch("/api/products/create", {
       method: "POST",
       credentials: "include",
@@ -141,6 +150,7 @@ export function ProductManager({
         ...restForm,
         sizes,
         sizeStock,
+        colors,
         price: Number(form.price),
         stock: totalStock || Number(form.stock),
         longDescription: form.longDescription || form.description,
@@ -174,6 +184,7 @@ export function ProductManager({
       image4: "",
       sizesInput: "S, M, L",
       sizeStockInput: "10, 8, 5",
+      colorsInput: "",
     });
   };
 
@@ -213,6 +224,7 @@ export function ProductManager({
           <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Stock total" type="number" value={form.stock} onChange={(event) => setForm((current) => ({ ...current, stock: event.target.value }))} required />
           <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Talles (S, M, L)" value={form.sizesInput} onChange={(event) => setForm((current) => ({ ...current, sizesInput: event.target.value }))} />
           <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Stock por talle (10, 8, 5)" value={form.sizeStockInput} onChange={(event) => setForm((current) => ({ ...current, sizeStockInput: event.target.value }))} />
+          <input className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Colores (Negro, Rojo) o dejar vacío" value={form.colorsInput} onChange={(event) => setForm((current) => ({ ...current, colorsInput: event.target.value }))} />
           <select className="rounded-full border border-white/10 bg-white/5 px-4 py-3" value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as ProductStatus }))}>
             {statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
@@ -274,6 +286,7 @@ export function ProductManager({
                           <input className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.subcategory ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, subcategory: event.target.value } : current))} />
                           <input className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" placeholder="Talles (S, M, L)" value={draft?.sizesInput ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, sizesInput: event.target.value } : current))} />
                           <input className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" placeholder="Stock por talle (10, 8, 5)" value={draft?.sizeStockInput ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, sizeStockInput: event.target.value } : current))} />
+                          <input className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" placeholder="Colores (Negro, Rojo) o dejar vacío" value={draft?.colorsInput ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, colorsInput: event.target.value } : current))} />
                           <input className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" type="number" value={draft?.price ?? 0} onChange={(event) => setDraft((current) => (current ? { ...current, price: Number(event.target.value) } : current))} />
                           <input className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" type="number" value={draft?.stock ?? 0} onChange={(event) => setDraft((current) => (current ? { ...current, stock: Number(event.target.value) } : current))} />
                           <select className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.status ?? "Nuevo"} onChange={(event) => setDraft((current) => (current ? { ...current, status: event.target.value as ProductStatus } : current))}>
