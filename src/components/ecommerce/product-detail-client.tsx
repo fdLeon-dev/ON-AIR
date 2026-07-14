@@ -39,9 +39,19 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">Talles: {product.sizes.join(", ")}</span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">Colores: {product.colors.join(", ")}</span>
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">Stock: {product.stock > 0 ? `${product.stock} unidades` : "Agotado"}</span>
           </div>
+          {product.colors.length > 0 ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {product.colors.map((color) => (
+                <span key={color} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">
+                  {color}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-zinc-500">Sin colores disponibles</p>
+          )}
           {availableSizes.length > 0 ? (
             <div className="mt-6">
               <p className="text-sm font-medium text-white">Selecciona talle</p>

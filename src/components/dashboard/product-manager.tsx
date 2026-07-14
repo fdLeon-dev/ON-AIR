@@ -306,6 +306,11 @@ export function ProductManager({
                           <p className="font-medium text-white">{product.name}</p>
                           <p className="text-xs text-zinc-400">{product.brand} · {product.category}</p>
                           {product.sizes.length > 0 ? <p className="text-xs text-zinc-500">Talles: {product.sizes.join(", ")}</p> : null}
+                          {product.colors.length > 0 ? (
+                            <p className="text-xs text-zinc-500">Colores: {product.colors.join(", ")}</p>
+                          ) : (
+                            <p className="text-xs text-zinc-500">Sin colores</p>
+                          )}
                         </div>
                       )}
                     </td>

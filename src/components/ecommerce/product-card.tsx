@@ -53,6 +53,15 @@ export function ProductCard({ product }: ProductCardProps) {
           </h3>
         </Link>
         <p className="text-sm leading-6 text-zinc-400">{product.description}</p>
+        {product.colors.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {product.colors.map((color) => (
+              <span key={color} className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-medium text-zinc-300">
+                {color}
+              </span>
+            ))}
+          </div>
+        ) : null}
         <div className="flex items-center justify-between">
           <div>
             <p className="text-lg font-semibold text-white">{formatCurrency(product.offerPrice ?? product.price)}</p>
