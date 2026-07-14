@@ -1,79 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HeroCarousel } from "@/components/ecommerce/hero-carousel";
 import type { HeroConfig } from "@/types";
 
 interface HeroSectionProps {
   heroConfig: HeroConfig;
 }
 
-const IMAGE_TRANSITION_MS = 700;
-
-function getVisibleImages(heroConfig: HeroConfig) {
-  return [heroConfig.hero1Url, heroConfig.hero2Url, heroConfig.hero3Url].filter(Boolean);
-}
-
 export function HeroSection({ heroConfig }: HeroSectionProps) {
-  const [index, setIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-  const images = useMemo(() => getVisibleImages(heroConfig), [heroConfig.hero1Url, heroConfig.hero2Url, heroConfig.hero3Url]);
-
-  const leftImage = heroConfig.hero1Url || images[0] || "/peak.png";
-  const rightImage = heroConfig.hero2Url || heroConfig.hero1Url || images[0] || "/peak.png";
-
-  useEffect(() => {
-    if (!heroConfig.carouselEnabled || !heroConfig.autoplay || images.length <= 1 || (heroConfig.pauseOnHover && isHovered)) {
-      return;
-    }
-
-    const interval = window.setInterval(() => {
-      setIndex((current) => {
-        if (current >= images.length - 1) {
-          return heroConfig.loop ? 0 : current;
-        }
-        return current + 1;
-      });
-    }, heroConfig.transitionInterval * 1000);
-
-    return () => window.clearInterval(interval);
-  }, [heroConfig.autoplay, heroConfig.carouselEnabled, heroConfig.loop, heroConfig.pauseOnHover, heroConfig.transitionInterval, images.length, isHovered]);
-
-  useEffect(() => {
-    if (!heroConfig.carouselEnabled || images.length === 0) {
-      setIndex(0);
-      return;
-    }
-    setIndex((current) => Math.min(current, images.length - 1));
-  }, [heroConfig.carouselEnabled, images.length]);
-
-  const renderCard = (label: string, imageSrc: string) => (
-    <div
-      className="relative min-h-[560px] overflow-hidden rounded-[2.5rem] border border-white/10 bg-zinc-950/70 p-3 shadow-[0_30px_100px_rgba(0,0,0,0.35)]"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div
-        className="absolute inset-0 transition-all duration-700"
-        style={{ opacity: 1, transform: heroConfig.transitionType === "slide" ? "translateX(0)" : "translateX(0)" }}
-      >
-        <Image
-          src={imageSrc || "/peak.png"}
-          alt={`${label} image`}
-          fill
-          sizes="(max-width: 1024px) 100vw, 50vw"
-          className="h-full w-full rounded-[2rem] object-cover"
-          priority
-        />
-      </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center text-xs uppercase tracking-[0.3em] text-white/40">
-        {heroConfig.carouselEnabled ? "Carrusel activo" : "Imagen principal"}
-      </div>
-    </div>
-  );
+  const leftFallback = "/peak.png";
+  const rightFallback = "/peak.png";
 
   return (
     <section className="relative isolate overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.04),_transparent_45%)] px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
@@ -90,19 +29,19 @@ export function HeroSection({ heroConfig }: HeroSectionProps) {
               </div>
             </div>
 
-            {renderCard("left", leftImage)}
+            <HeroCarousel config={heroConfig.leftCarousel} fallbackImage={leftFallback} label="Izquierda" />
 
             <p className="max-w-xl text-lg leading-8 text-zinc-400 sm:text-xl">
               Ropa deportiva que combina tecnología, minimalismo y un lenguaje visual urbano para quienes exigen más.
             </p>
           </div>
 
-          <div>{renderCard("right", rightImage)}</div>
+          <HeroCarousel config={heroConfig.rightCarousel} fallbackImage={rightFallback} label="Derecha" />
         </div>
 
         <div className="mx-auto mt-10 flex max-w-3xl flex-wrap items-center justify-center gap-4 lg:gap-6">
           <Button variant="primary" size="lg" asChild>
-            <Link href="/catalog">Comprar ahora <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            <Link href="/catalog">Comprar ahora</Link>
           </Button>
           <Button variant="secondary" size="lg" asChild>
             <Link href="/promotions">Ver colección</Link>

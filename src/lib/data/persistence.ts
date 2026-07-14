@@ -8,15 +8,26 @@ const STORAGE_PRODUCTS_OBJECT = "app-data/products.json";
 const STORAGE_HERO_OBJECT = "app-data/hero-config.json";
 
 const defaultHeroConfig: HeroConfig = {
-  hero1Url: "",
-  hero2Url: "",
-  hero3Url: "",
-  carouselEnabled: false,
-  autoplay: true,
-  loop: true,
-  pauseOnHover: true,
-  transitionType: "fade",
-  transitionInterval: 5,
+  leftCarousel: {
+    images: ["", "", ""],
+    enabled: false,
+    autoplay: true,
+    infinite: true,
+    pauseOnHover: true,
+    transition: "fade",
+    interval: 3000,
+    transitionDuration: 300,
+  },
+  rightCarousel: {
+    images: ["", "", ""],
+    enabled: false,
+    autoplay: true,
+    infinite: true,
+    pauseOnHover: true,
+    transition: "fade",
+    interval: 3000,
+    transitionDuration: 300,
+  },
 };
 
 async function getServiceSupabase() {
@@ -247,18 +258,27 @@ export async function loadHeroConfig(): Promise<HeroConfig> {
     const supabase = await getSessionSupabase();
     const { data, error } = await supabase.from("hero_config").select("*").eq("config_key", "default").single();
     if (!error && data) {
-      const leftCardImages = Array.isArray(data.left_card_images) ? data.left_card_images : [];
-      const rightCardImages = Array.isArray(data.right_card_images) ? data.right_card_images : [];
       return {
-        hero1Url: normalizeHeroUrl(data.hero_1_url ?? leftCardImages[0]),
-        hero2Url: normalizeHeroUrl(data.hero_2_url ?? leftCardImages[1] ?? rightCardImages[0]),
-        hero3Url: normalizeHeroUrl(data.hero_3_url ?? leftCardImages[2] ?? rightCardImages[1]),
-        carouselEnabled: normalizeHeroBoolean(data.carousel_enabled, defaultHeroConfig.carouselEnabled),
-        autoplay: normalizeHeroBoolean(data.autoplay, defaultHeroConfig.autoplay),
-        loop: normalizeHeroBoolean(data.loop, defaultHeroConfig.loop),
-        pauseOnHover: normalizeHeroBoolean(data.pause_on_hover, defaultHeroConfig.pauseOnHover),
-        transitionType: normalizeHeroTransitionType(data.transition_type),
-        transitionInterval: normalizeHeroInterval(data.transition_interval ?? data.transition_ms ?? defaultHeroConfig.transitionInterval),
+        leftCarousel: {
+          images: Array.isArray(data.left_card_images) ? data.left_card_images.slice(0, 3) : ["", "", ""],
+          enabled: normalizeHeroBoolean(data.left_carousel_enabled, defaultHeroConfig.leftCarousel.enabled),
+          autoplay: normalizeHeroBoolean(data.left_carousel_autoplay, defaultHeroConfig.leftCarousel.autoplay),
+          infinite: normalizeHeroBoolean(data.left_carousel_infinite, defaultHeroConfig.leftCarousel.infinite),
+          pauseOnHover: normalizeHeroBoolean(data.left_carousel_pause_on_hover, defaultHeroConfig.leftCarousel.pauseOnHover),
+          transition: data.left_carousel_transition === "slide" ? "slide" : "fade",
+          interval: normalizeHeroInterval(data.left_carousel_interval ?? defaultHeroConfig.leftCarousel.interval),
+          transitionDuration: Number(data.left_carousel_transition_duration ?? defaultHeroConfig.leftCarousel.transitionDuration),
+        },
+        rightCarousel: {
+          images: Array.isArray(data.right_card_images) ? data.right_card_images.slice(0, 3) : ["", "", ""],
+          enabled: normalizeHeroBoolean(data.right_carousel_enabled, defaultHeroConfig.rightCarousel.enabled),
+          autoplay: normalizeHeroBoolean(data.right_carousel_autoplay, defaultHeroConfig.rightCarousel.autoplay),
+          infinite: normalizeHeroBoolean(data.right_carousel_infinite, defaultHeroConfig.rightCarousel.infinite),
+          pauseOnHover: normalizeHeroBoolean(data.right_carousel_pause_on_hover, defaultHeroConfig.rightCarousel.pauseOnHover),
+          transition: data.right_carousel_transition === "slide" ? "slide" : "fade",
+          interval: normalizeHeroInterval(data.right_carousel_interval ?? defaultHeroConfig.rightCarousel.interval),
+          transitionDuration: Number(data.right_carousel_transition_duration ?? defaultHeroConfig.rightCarousel.transitionDuration),
+        },
       };
     }
   } catch {
@@ -266,19 +286,70 @@ export async function loadHeroConfig(): Promise<HeroConfig> {
   }
 
   try {
-    const remoteHeroConfig = await readRemoteJson<Partial<HeroConfig>>(STORAGE_HERO_OBJECT);
-    if (remoteHeroConfig) {
-      return {
-        hero1Url: normalizeHeroUrl(remoteHeroConfig.hero1Url ?? defaultHeroConfig.hero1Url),
-        hero2Url: normalizeHeroUrl(remoteHeroConfig.hero2Url ?? defaultHeroConfig.hero2Url),
-        hero3Url: normalizeHeroUrl(remoteHeroConfig.hero3Url ?? defaultHeroConfig.hero3Url),
-        carouselEnabled: normalizeHeroBoolean(remoteHeroConfig.carouselEnabled, defaultHeroConfig.carouselEnabled),
-        autoplay: normalizeHeroBoolean(remoteHeroConfig.autoplay, defaultHeroConfig.autoplay),
-        loop: normalizeHeroBoolean(remoteHeroConfig.loop, defaultHeroConfig.loop),
-        pauseOnHover: normalizeHeroBoolean(remoteHeroConfig.pauseOnHover, defaultHeroConfig.pauseOnHover),
-        transitionType: normalizeHeroTransitionType(remoteHeroConfig.transitionType),
-        transitionInterval: normalizeHeroInterval(remoteHeroConfig.transitionInterval),
-      };
+    const remoteHeroConfig = await readRemoteJson<unknown>(STORAGE_HERO_OBJECT);
+    if (remoteHeroConfig && typeof remoteHeroConfig === "object" && !Array.isArray(remoteHeroConfig)) {
+      const remote = remoteHeroConfig as Record<string, unknown>;
+
+      const leftCarousel = remote.leftCarousel as Record<string, unknown> | undefined;
+      const rightCarousel = remote.rightCarousel as Record<string, unknown> | undefined;
+
+      if (leftCarousel || rightCarousel) {
+        return {
+          leftCarousel: {
+            images: Array.isArray(leftCarousel?.images)
+              ? (leftCarousel.images as unknown[]).map((image) => normalizeHeroUrl(image)).slice(0, 3)
+              : defaultHeroConfig.leftCarousel.images,
+            enabled: normalizeHeroBoolean(leftCarousel?.enabled, defaultHeroConfig.leftCarousel.enabled),
+            autoplay: normalizeHeroBoolean(leftCarousel?.autoplay, defaultHeroConfig.leftCarousel.autoplay),
+            infinite: normalizeHeroBoolean(leftCarousel?.infinite, defaultHeroConfig.leftCarousel.infinite),
+            pauseOnHover: normalizeHeroBoolean(leftCarousel?.pauseOnHover, defaultHeroConfig.leftCarousel.pauseOnHover),
+            transition: normalizeHeroTransitionType(leftCarousel?.transition),
+            interval: normalizeHeroInterval(leftCarousel?.interval ?? defaultHeroConfig.leftCarousel.interval),
+            transitionDuration: Number(leftCarousel?.transitionDuration ?? defaultHeroConfig.leftCarousel.transitionDuration),
+          },
+          rightCarousel: {
+            images: Array.isArray(rightCarousel?.images)
+              ? (rightCarousel.images as unknown[]).map((image) => normalizeHeroUrl(image)).slice(0, 3)
+              : defaultHeroConfig.rightCarousel.images,
+            enabled: normalizeHeroBoolean(rightCarousel?.enabled, defaultHeroConfig.rightCarousel.enabled),
+            autoplay: normalizeHeroBoolean(rightCarousel?.autoplay, defaultHeroConfig.rightCarousel.autoplay),
+            infinite: normalizeHeroBoolean(rightCarousel?.infinite, defaultHeroConfig.rightCarousel.infinite),
+            pauseOnHover: normalizeHeroBoolean(rightCarousel?.pauseOnHover, defaultHeroConfig.rightCarousel.pauseOnHover),
+            transition: normalizeHeroTransitionType(rightCarousel?.transition),
+            interval: normalizeHeroInterval(rightCarousel?.interval ?? defaultHeroConfig.rightCarousel.interval),
+            transitionDuration: Number(rightCarousel?.transitionDuration ?? defaultHeroConfig.rightCarousel.transitionDuration),
+          },
+        };
+      }
+
+      if (remote.hero1Url || remote.hero2Url || remote.hero3Url) {
+        const hero1 = normalizeHeroUrl(remote.hero1Url);
+        const hero2 = normalizeHeroUrl(remote.hero2Url);
+        const hero3 = normalizeHeroUrl(remote.hero3Url);
+
+        return {
+          leftCarousel: {
+            images: [hero1, hero2, hero3].filter(Boolean).slice(0, 3),
+            enabled: normalizeHeroBoolean(remote.carouselEnabled, defaultHeroConfig.leftCarousel.enabled),
+            autoplay: normalizeHeroBoolean(remote.autoplay, defaultHeroConfig.leftCarousel.autoplay),
+            infinite: normalizeHeroBoolean(remote.loop, defaultHeroConfig.leftCarousel.infinite),
+            pauseOnHover: normalizeHeroBoolean(remote.pauseOnHover, defaultHeroConfig.leftCarousel.pauseOnHover),
+            transition: normalizeHeroTransitionType(remote.transitionType),
+            interval: normalizeHeroInterval(remote.transitionInterval ?? defaultHeroConfig.leftCarousel.interval),
+            transitionDuration: Number(remote.transitionInterval ?? defaultHeroConfig.leftCarousel.transitionDuration),
+          },
+          rightCarousel: {
+            images: [hero2 || hero1, hero3 || hero2, hero1 || hero3].filter(Boolean).slice(0, 3),
+            enabled: normalizeHeroBoolean(remote.carouselEnabled, defaultHeroConfig.rightCarousel.enabled),
+            autoplay: normalizeHeroBoolean(remote.autoplay, defaultHeroConfig.rightCarousel.autoplay),
+            infinite: normalizeHeroBoolean(remote.loop, defaultHeroConfig.rightCarousel.infinite),
+            pauseOnHover: normalizeHeroBoolean(remote.pauseOnHover, defaultHeroConfig.rightCarousel.pauseOnHover),
+            transition: normalizeHeroTransitionType(remote.transitionType),
+            interval: normalizeHeroInterval(remote.transitionInterval ?? defaultHeroConfig.rightCarousel.interval),
+            transitionDuration: Number(remote.transitionInterval ?? defaultHeroConfig.rightCarousel.transitionDuration),
+          },
+        };
+      }
     }
   } catch {
     // ignore
@@ -289,15 +360,26 @@ export async function loadHeroConfig(): Promise<HeroConfig> {
 
 export async function saveHeroConfig(config: Partial<HeroConfig>) {
   const nextConfig: HeroConfig = {
-    hero1Url: normalizeHeroUrl(config.hero1Url ?? defaultHeroConfig.hero1Url),
-    hero2Url: normalizeHeroUrl(config.hero2Url ?? defaultHeroConfig.hero2Url),
-    hero3Url: normalizeHeroUrl(config.hero3Url ?? defaultHeroConfig.hero3Url),
-    carouselEnabled: normalizeHeroBoolean(config.carouselEnabled, defaultHeroConfig.carouselEnabled),
-    autoplay: normalizeHeroBoolean(config.autoplay, defaultHeroConfig.autoplay),
-    loop: normalizeHeroBoolean(config.loop, defaultHeroConfig.loop),
-    pauseOnHover: normalizeHeroBoolean(config.pauseOnHover, defaultHeroConfig.pauseOnHover),
-    transitionType: normalizeHeroTransitionType(config.transitionType),
-    transitionInterval: normalizeHeroInterval(config.transitionInterval),
+    leftCarousel: {
+      images: Array.isArray(config.leftCarousel?.images) ? config.leftCarousel.images.slice(0, 3) : defaultHeroConfig.leftCarousel.images,
+      enabled: normalizeHeroBoolean(config.leftCarousel?.enabled, defaultHeroConfig.leftCarousel.enabled),
+      autoplay: normalizeHeroBoolean(config.leftCarousel?.autoplay, defaultHeroConfig.leftCarousel.autoplay),
+      infinite: normalizeHeroBoolean(config.leftCarousel?.infinite, defaultHeroConfig.leftCarousel.infinite),
+      pauseOnHover: normalizeHeroBoolean(config.leftCarousel?.pauseOnHover, defaultHeroConfig.leftCarousel.pauseOnHover),
+      transition: config.leftCarousel?.transition === "slide" ? "slide" : "fade",
+      interval: normalizeHeroInterval(config.leftCarousel?.interval ?? defaultHeroConfig.leftCarousel.interval),
+      transitionDuration: Number(config.leftCarousel?.transitionDuration ?? defaultHeroConfig.leftCarousel.transitionDuration),
+    },
+    rightCarousel: {
+      images: Array.isArray(config.rightCarousel?.images) ? config.rightCarousel.images.slice(0, 3) : defaultHeroConfig.rightCarousel.images,
+      enabled: normalizeHeroBoolean(config.rightCarousel?.enabled, defaultHeroConfig.rightCarousel.enabled),
+      autoplay: normalizeHeroBoolean(config.rightCarousel?.autoplay, defaultHeroConfig.rightCarousel.autoplay),
+      infinite: normalizeHeroBoolean(config.rightCarousel?.infinite, defaultHeroConfig.rightCarousel.infinite),
+      pauseOnHover: normalizeHeroBoolean(config.rightCarousel?.pauseOnHover, defaultHeroConfig.rightCarousel.pauseOnHover),
+      transition: config.rightCarousel?.transition === "slide" ? "slide" : "fade",
+      interval: normalizeHeroInterval(config.rightCarousel?.interval ?? defaultHeroConfig.rightCarousel.interval),
+      transitionDuration: Number(config.rightCarousel?.transitionDuration ?? defaultHeroConfig.rightCarousel.transitionDuration),
+    },
   };
 
   try {
@@ -305,18 +387,22 @@ export async function saveHeroConfig(config: Partial<HeroConfig>) {
     await supabase.from("hero_config").upsert(
       {
         config_key: "default",
-        hero_1_url: nextConfig.hero1Url,
-        hero_2_url: nextConfig.hero2Url,
-        hero_3_url: nextConfig.hero3Url,
-        carousel_enabled: nextConfig.carouselEnabled,
-        autoplay: nextConfig.autoplay,
-        loop: nextConfig.loop,
-        pause_on_hover: nextConfig.pauseOnHover,
-        transition_type: nextConfig.transitionType,
-        transition_interval: nextConfig.transitionInterval,
-        left_card_images: [nextConfig.hero1Url, nextConfig.hero2Url, nextConfig.hero3Url].filter(Boolean),
-        right_card_images: [nextConfig.hero1Url, nextConfig.hero2Url, nextConfig.hero3Url].filter(Boolean),
-        transition_ms: nextConfig.transitionInterval * 1000,
+        left_card_images: nextConfig.leftCarousel.images.filter(Boolean),
+        left_carousel_enabled: nextConfig.leftCarousel.enabled,
+        left_carousel_autoplay: nextConfig.leftCarousel.autoplay,
+        left_carousel_infinite: nextConfig.leftCarousel.infinite,
+        left_carousel_pause_on_hover: nextConfig.leftCarousel.pauseOnHover,
+        left_carousel_transition: nextConfig.leftCarousel.transition,
+        left_carousel_interval: nextConfig.leftCarousel.interval,
+        left_carousel_transition_duration: nextConfig.leftCarousel.transitionDuration,
+        right_card_images: nextConfig.rightCarousel.images.filter(Boolean),
+        right_carousel_enabled: nextConfig.rightCarousel.enabled,
+        right_carousel_autoplay: nextConfig.rightCarousel.autoplay,
+        right_carousel_infinite: nextConfig.rightCarousel.infinite,
+        right_carousel_pause_on_hover: nextConfig.rightCarousel.pauseOnHover,
+        right_carousel_transition: nextConfig.rightCarousel.transition,
+        right_carousel_interval: nextConfig.rightCarousel.interval,
+        right_carousel_transition_duration: nextConfig.rightCarousel.transitionDuration,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "config_key" },

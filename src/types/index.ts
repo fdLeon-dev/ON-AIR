@@ -67,14 +67,18 @@ export interface Review {
   content: string;
 }
 
-export interface HeroConfig {
-  hero1Url: string;
-  hero2Url: string;
-  hero3Url: string;
-  carouselEnabled: boolean;
+export interface HeroCarouselSideConfig {
+  images: string[];
+  enabled: boolean;
   autoplay: boolean;
-  loop: boolean;
+  infinite: boolean;
   pauseOnHover: boolean;
-  transitionType: "fade" | "slide";
-  transitionInterval: number;
+  transition: "fade" | "slide";
+  interval: number;
+  transitionDuration: number;
+}
+
+export interface HeroConfig {
+  leftCarousel: HeroCarouselSideConfig;
+  rightCarousel: HeroCarouselSideConfig;
 }
