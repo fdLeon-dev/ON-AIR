@@ -22,6 +22,9 @@ export function HeroSection({ heroConfig }: HeroSectionProps) {
   const [isHovered, setIsHovered] = useState(false);
   const images = useMemo(() => getVisibleImages(heroConfig), [heroConfig.hero1Url, heroConfig.hero2Url, heroConfig.hero3Url]);
 
+  const leftImage = heroConfig.hero1Url || images[0] || "/peak.png";
+  const rightImage = heroConfig.hero2Url || heroConfig.hero1Url || images[0] || "/peak.png";
+
   useEffect(() => {
     if (!heroConfig.carouselEnabled || !heroConfig.autoplay || images.length <= 1 || (heroConfig.pauseOnHover && isHovered)) {
       return;
@@ -47,32 +50,25 @@ export function HeroSection({ heroConfig }: HeroSectionProps) {
     setIndex((current) => Math.min(current, images.length - 1));
   }, [heroConfig.carouselEnabled, images.length]);
 
-  const heroImages = heroConfig.carouselEnabled && heroConfig.autoplay ? images : images.slice(0, 1);
-  const activeImages = heroImages.length > 0 ? heroImages : ["/peak.png"];
-
-  const renderCard = (label: string) => (
+  const renderCard = (label: string, imageSrc: string) => (
     <div
       className="relative min-h-[560px] overflow-hidden rounded-[2.5rem] border border-white/10 bg-zinc-950/70 p-3 shadow-[0_30px_100px_rgba(0,0,0,0.35)]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {activeImages.map((src, imageIndex) => (
-        <div
-          key={src || imageIndex}
-          className="absolute inset-0 transition-all duration-700"
-          style={{ opacity: imageIndex === index ? 1 : 0, transform: heroConfig.transitionType === "slide" ? "translateX(0)" : "translateX(0)" }}
-        >
-          <Image
-            src={src || "/peak.png"}
-            alt={`${label} image ${imageIndex + 1}`}
-            fill
-            sizes="(max-width: 1024px) 100vw, 50vw"
-            className="h-full w-full rounded-[2rem] object-cover"
-            loading={imageIndex === 0 ? "eager" : "lazy"}
-            priority={imageIndex === 0}
-          />
-        </div>
-      ))}
+      <div
+        className="absolute inset-0 transition-all duration-700"
+        style={{ opacity: 1, transform: heroConfig.transitionType === "slide" ? "translateX(0)" : "translateX(0)" }}
+      >
+        <Image
+          src={imageSrc || "/peak.png"}
+          alt={`${label} image`}
+          fill
+          sizes="(max-width: 1024px) 100vw, 50vw"
+          className="h-full w-full rounded-[2rem] object-cover"
+          priority
+        />
+      </div>
       <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center text-xs uppercase tracking-[0.3em] text-white/40">
         {heroConfig.carouselEnabled ? "Carrusel activo" : "Imagen principal"}
       </div>
@@ -94,14 +90,14 @@ export function HeroSection({ heroConfig }: HeroSectionProps) {
               </div>
             </div>
 
-            {renderCard("left")}
+            {renderCard("left", leftImage)}
 
             <p className="max-w-xl text-lg leading-8 text-zinc-400 sm:text-xl">
               Ropa deportiva que combina tecnología, minimalismo y un lenguaje visual urbano para quienes exigen más.
             </p>
           </div>
 
-          <div>{renderCard("right")}</div>
+          <div>{renderCard("right", rightImage)}</div>
         </div>
 
         <div className="mx-auto mt-10 flex max-w-3xl flex-wrap items-center justify-center gap-4 lg:gap-6">

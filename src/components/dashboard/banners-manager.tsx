@@ -18,7 +18,9 @@ function isSupabaseBucketUrl(value: string) {
   if (!value) return false;
   try {
     const parsed = new URL(value);
-    return parsed.hostname.endsWith(".supabase.co") && parsed.pathname.includes("/storage/v1/object/public/productos/");
+    const isSupabaseHost = parsed.hostname.includes("supabase") && parsed.hostname.endsWith(".co");
+    const isPublicObjectPath = parsed.pathname.includes("/storage/v1/object/public/");
+    return isSupabaseHost && isPublicObjectPath;
   } catch {
     return false;
   }
