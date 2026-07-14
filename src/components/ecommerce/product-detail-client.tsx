@@ -13,10 +13,12 @@ interface ProductDetailClientProps {
 
 export function ProductDetailClient({ product }: ProductDetailClientProps) {
   const [selectedSize, setSelectedSize] = useState<string>(product.sizes[0] ?? "");
+  const [selectedColor, setSelectedColor] = useState<string>(product.colors[0] ?? "");
 
   useEffect(() => {
     setSelectedSize(product.sizes[0] ?? "");
-  }, [product.id, product.sizes]);
+    setSelectedColor(product.colors[0] ?? "");
+  }, [product.id, product.sizes, product.colors]);
 
   const availableSizes = product.sizes ?? [];
   const sizeStock = product.sizeStock ?? {};
@@ -73,6 +75,26 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
               </div>
             </div>
           ) : null}
+          {product.colors.length > 0 ? (
+            <div className="mt-6">
+              <p className="text-sm font-medium text-white">Selecciona color</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {product.colors.map((color) => {
+                  const isSelected = selectedColor === color;
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setSelectedColor(color)}
+                      className={`rounded-full border px-3 py-2 text-sm ${isSelected ? "border-emerald-400 bg-emerald-500/15 text-emerald-200" : "border-white/10 bg-white/5 text-zinc-300"}`}
+                    >
+                      {color}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
           <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_1fr]">
             <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
               <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">Material</p>
@@ -96,6 +118,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
               className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
               label="Agregar al carrito"
               selectedSize={selectedSize}
+              selectedColor={selectedColor}
             />
             <Link href="/favorites" className="rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10">Agregar a favoritos</Link>
           </div>

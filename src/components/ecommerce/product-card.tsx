@@ -73,6 +73,7 @@ export function ProductCard({ product }: ProductCardProps) {
             product={product}
             className="rounded-full border border-white/10 bg-white/5 p-3 text-white transition hover:bg-white/10 animate-[pulse_0.45s_ease-out_1]"
             label={<ShoppingBag className="h-4 w-4" />}
+            selectedColor={product.colors[0] ?? ""}
           />
         </div>
       </div>

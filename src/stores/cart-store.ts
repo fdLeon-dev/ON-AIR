@@ -4,11 +4,14 @@ import { createClient } from "@/lib/supabase/client";
 
 interface CartItem {
   id: string;
+  productId: string;
   name: string;
   price: number;
   image: string;
   quantity: number;
   size?: string;
+  color?: string;
+  shortDescription?: string;
 }
 
 interface CartStore {
@@ -65,9 +68,13 @@ export const useCartStore = create<CartStore>()(
 
           const { data: existing, error: existingError } = await supabase
             .from("cart_items")
-            .select("quantity")
-            .eq("user_id", userId)
-            .eq("product_id", productId)
+            .select("id, quantity")
+            .match({
+              user_id: userId,
+              product_id: productId,
+              size: item.size ?? null,
+              color: item.color ?? null,
+            })
             .maybeSingle();
 
           const isNonEmptyError = (e: any) => {
@@ -92,9 +99,15 @@ export const useCartStore = create<CartStore>()(
           if (existing) {
             const { error: updateError } = await supabase
               .from("cart_items")
-              .update({ quantity: existing.quantity + item.quantity, price_snapshot: item.price, updated_at: new Date().toISOString() })
-              .eq("user_id", userId)
-              .eq("product_id", productId);
+              .update({
+                quantity: existing.quantity + item.quantity,
+                price_snapshot: item.price,
+                size: item.size,
+                color: item.color,
+                short_description: item.shortDescription,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", existing.id);
 
             if (isNonEmptyError(updateError)) {
               // eslint-disable-next-line no-console
@@ -107,6 +120,9 @@ export const useCartStore = create<CartStore>()(
               product_id: productId,
               quantity: item.quantity,
               price_snapshot: item.price,
+              size: item.size,
+              color: item.color,
+              short_description: item.shortDescription,
             });
 
             if (isNonEmptyError(insertError)) {
@@ -145,7 +161,7 @@ export const useCartStore = create<CartStore>()(
           return;
         }
 
-        await supabase.from("cart_items").delete().eq("user_id", userId).eq("product_id", id);
+        await supabase.from("cart_items").delete().eq("id", id).eq("user_id", userId);
         await get().syncFromSupabase();
       },
       updateQuantity: async (id, quantity) => {
@@ -158,9 +174,9 @@ export const useCartStore = create<CartStore>()(
         }
 
         if (quantity <= 0) {
-          await supabase.from("cart_items").delete().eq("user_id", userId).eq("product_id", id);
+          await supabase.from("cart_items").delete().eq("id", id).eq("user_id", userId);
         } else {
-          await supabase.from("cart_items").update({ quantity, updated_at: new Date().toISOString() }).eq("user_id", userId).eq("product_id", id);
+          await supabase.from("cart_items").update({ quantity, updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", userId);
         }
 
         await get().syncFromSupabase();
@@ -187,7 +203,10 @@ export const useCartStore = create<CartStore>()(
         }
 
         try {
-          const { data, error } = await supabase.from("cart_items").select("product_id, quantity, price_snapshot").eq("user_id", userId);
+          const { data, error } = await supabase
+            .from("cart_items")
+            .select("id, product_id, quantity, price_snapshot, size, color, short_description")
+            .eq("user_id", userId);
 
           if (error) {
             const message = error.message ?? "Unknown error";
@@ -221,11 +240,15 @@ export const useCartStore = create<CartStore>()(
           const items = cartItems.map((entry: any) => {
             const product = productsById.get(entry.product_id);
             return {
-              id: entry.product_id,
+              id: entry.id,
+              productId: entry.product_id,
               name: product?.name ?? entry.product_id,
               price: Number(entry.price_snapshot ?? 0),
               image: product?.image1 ?? product?.image2 ?? product?.image3 ?? product?.image4 ?? "",
               quantity: Number(entry.quantity ?? 0),
+              size: entry.size ?? undefined,
+              color: entry.color ?? undefined,
+              shortDescription: entry.short_description ?? undefined,
             };
           });
 
@@ -245,11 +268,15 @@ export const useCartStore = create<CartStore>()(
         const localItems = get().items;
         if (!localItems || localItems.length === 0) return;
 
-        const isUuid = (val: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
+        const isUuid = (val: string) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
 
         for (const item of localItems) {
           try {
-            let productUuid = item.id;
+            let productUuid = item.productId || item.id;
+            if (!isUuid(productUuid) && productUuid.includes(":")) {
+              productUuid = productUuid.split(":")[0];
+            }
+
             if (!isUuid(productUuid)) {
               const { data: prod, error: prodError } = await supabase.from("products").select("id,slug").eq("slug", productUuid).maybeSingle();
               if (prod && prod.id) productUuid = prod.id;
@@ -262,23 +289,36 @@ export const useCartStore = create<CartStore>()(
 
             const { data: existing } = await supabase
               .from("cart_items")
-              .select("quantity")
-              .eq("user_id", userId)
-              .eq("product_id", productUuid)
+              .select("id, quantity")
+              .match({
+                user_id: userId,
+                product_id: productUuid,
+                size: item.size ?? null,
+                color: item.color ?? null,
+              })
               .maybeSingle();
 
             if (existing) {
               await supabase
                 .from("cart_items")
-                .update({ quantity: existing.quantity + item.quantity, price_snapshot: item.price, updated_at: new Date().toISOString() })
-                .eq("user_id", userId)
-                .eq("product_id", productUuid);
+                .update({
+                  quantity: existing.quantity + item.quantity,
+                  price_snapshot: item.price,
+                  size: item.size,
+                  color: item.color,
+                  short_description: item.shortDescription,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("id", existing.id);
             } else {
               await supabase.from("cart_items").insert({
                 user_id: userId,
                 product_id: productUuid,
                 quantity: item.quantity,
                 price_snapshot: item.price,
+                size: item.size,
+                color: item.color,
+                short_description: item.shortDescription,
               });
             }
           } catch (err) {

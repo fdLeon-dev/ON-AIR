@@ -11,9 +11,10 @@ interface AddToCartButtonProps {
   className?: string;
   label?: ReactNode;
   selectedSize?: string;
+  selectedColor?: string;
 }
 
-export function AddToCartButton({ product, className, label = "Agregar al carrito", selectedSize }: AddToCartButtonProps) {
+export function AddToCartButton({ product, className, label = "Agregar al carrito", selectedSize, selectedColor }: AddToCartButtonProps) {
   const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
   const [visible, setVisible] = useState(false);
@@ -29,12 +30,15 @@ export function AddToCartButton({ product, className, label = "Agregar al carrit
     event.stopPropagation();
 
     addItem({
-      id: product.id,
+      id: `${product.id}:${selectedSize || product.sizes[0] || ""}:${selectedColor || product.colors[0] || ""}`,
+      productId: product.id,
       name: product.name,
       price: product.offerPrice ?? product.price,
       image: product.image1 || product.image2 || product.image3 || product.image4,
       quantity: 1,
       size: selectedSize || product.sizes[0] || "",
+      color: selectedColor || product.colors[0] || "",
+      shortDescription: product.description,
     });
 
     setVisible(true);
