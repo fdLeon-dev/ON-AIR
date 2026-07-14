@@ -60,9 +60,9 @@ export async function POST(request: Request) {
       product_id: product.id,
       quantity,
       price_at_purchase: priceAtPurchase,
-      size: item.size,
-      color: item.color,
-      short_description: item.shortDescription,
+      size: item.size ?? "",
+      color: item.color ?? "",
+      short_description: item.shortDescription ?? "",
     });
   }
 

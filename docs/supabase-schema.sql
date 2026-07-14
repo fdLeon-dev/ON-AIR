@@ -82,17 +82,39 @@ create table if not exists public.cart_items (
   product_id uuid not null references public.products(id) on delete cascade,
   quantity integer not null default 1 check (quantity > 0),
   price_snapshot numeric(12,2) not null default 0,
-  size text,
-  color text,
-  short_description text,
+  size text not null default '',
+  color text not null default '',
+  short_description text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique(user_id, product_id, size, color)
 );
 
-alter table public.cart_items add column if not exists size text;
-alter table public.cart_items add column if not exists color text;
-alter table public.cart_items add column if not exists short_description text;
+alter table public.cart_items add column if not exists size text default '' not null;
+alter table public.cart_items add column if not exists color text default '' not null;
+alter table public.cart_items add column if not exists short_description text default '' not null;
+update public.cart_items set size = '' where size is null;
+update public.cart_items set color = '' where color is null;
+update public.cart_items set short_description = '' where short_description is null;
+-- Deduplicate rows that were previously allowed by NULL semantics in the unique constraint
+delete from public.cart_items a
+using public.cart_items b
+where a.id > b.id
+  and a.user_id = b.user_id
+  and a.product_id = b.product_id
+  and coalesce(a.size, '') = coalesce(b.size, '')
+  and coalesce(a.color, '') = coalesce(b.color, '');
+alter table public.cart_items alter column size set default '';
+alter table public.cart_items alter column color set default '';
+alter table public.cart_items alter column short_description set default '';
+alter table public.cart_items alter column size set not null;
+alter table public.cart_items alter column color set not null;
+alter table public.cart_items alter column short_description set not null;
+
+-- Ensure legacy unique constraints do not block variant-aware cart items
+alter table public.cart_items drop constraint if exists cart_items_user_id_product_id_key;
+alter table public.cart_items drop constraint if exists cart_items_user_id_product_id_size_color_key;
+create unique index if not exists cart_items_user_id_product_id_size_color_idx on public.cart_items(user_id, product_id, size, color);
 
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
@@ -111,15 +133,24 @@ create table if not exists public.order_items (
   product_id uuid not null references public.products(id) on delete cascade,
   quantity integer not null default 1 check (quantity > 0),
   price_at_purchase numeric(12,2) not null default 0,
-  size text,
-  color text,
-  short_description text,
+  size text not null default '',
+  color text not null default '',
+  short_description text not null default '',
   created_at timestamptz not null default now()
 );
 
-alter table public.order_items add column if not exists size text;
-alter table public.order_items add column if not exists color text;
-alter table public.order_items add column if not exists short_description text;
+alter table public.order_items add column if not exists size text default '' not null;
+alter table public.order_items add column if not exists color text default '' not null;
+alter table public.order_items add column if not exists short_description text default '' not null;
+update public.order_items set size = '' where size is null;
+update public.order_items set color = '' where color is null;
+update public.order_items set short_description = '' where short_description is null;
+alter table public.order_items alter column size set default '';
+alter table public.order_items alter column color set default '';
+alter table public.order_items alter column short_description set default '';
+alter table public.order_items alter column size set not null;
+alter table public.order_items alter column color set not null;
+alter table public.order_items alter column short_description set not null;
 
 create table if not exists public.order_histories (
   id uuid primary key default gen_random_uuid(),

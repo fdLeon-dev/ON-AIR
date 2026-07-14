@@ -87,8 +87,8 @@ export const useCartStore = create<CartStore>()(
             .match({
               user_id: userId,
               product_id: productId,
-              size: item.size ?? null,
-              color: item.color ?? null,
+              size: item.size ?? "",
+              color: item.color ?? "",
             })
             .maybeSingle();
 
@@ -129,9 +129,9 @@ export const useCartStore = create<CartStore>()(
               updated_at: new Date().toISOString(),
             };
             if (supportsVariantColumns) {
-              updatePayload.size = item.size;
-              updatePayload.color = item.color;
-              updatePayload.short_description = item.shortDescription;
+              updatePayload.size = item.size ?? "";
+              updatePayload.color = item.color ?? "";
+              updatePayload.short_description = item.shortDescription ?? "";
             }
 
             const { error: updateError } = await supabase.from("cart_items").update(updatePayload).eq("id", existing.id);
@@ -149,9 +149,9 @@ export const useCartStore = create<CartStore>()(
             };
             const onConflict = supportsVariantColumns ? "user_id,product_id,size,color" : "user_id,product_id";
             if (supportsVariantColumns) {
-              insertPayload.size = item.size;
-              insertPayload.color = item.color;
-              insertPayload.short_description = item.shortDescription;
+              insertPayload.size = item.size ?? "";
+              insertPayload.color = item.color ?? "";
+              insertPayload.short_description = item.shortDescription ?? "";
             }
 
             const { error: insertError } = await supabase.from("cart_items").upsert(insertPayload, { onConflict });
@@ -325,18 +325,20 @@ export const useCartStore = create<CartStore>()(
               }
             }
 
+            let supportsVariantColumns = true;
             let response = await supabase
               .from("cart_items")
               .select("id, quantity")
               .match({
                 user_id: userId,
                 product_id: productUuid,
-                size: item.size ?? null,
-                color: item.color ?? null,
+                size: item.size ?? "",
+                color: item.color ?? "",
               })
               .maybeSingle();
 
             if (response.error && usesVariantColumns(response.error)) {
+              supportsVariantColumns = false;
               response = await supabase
                 .from("cart_items")
                 .select("id, quantity")
@@ -352,10 +354,10 @@ export const useCartStore = create<CartStore>()(
                 updated_at: new Date().toISOString(),
               };
 
-              if (!usesVariantColumns(response.error)) {
-                updatePayload.size = item.size;
-                updatePayload.color = item.color;
-                updatePayload.short_description = item.shortDescription;
+              if (supportsVariantColumns) {
+                updatePayload.size = item.size ?? "";
+                updatePayload.color = item.color ?? "";
+                updatePayload.short_description = item.shortDescription ?? "";
               }
 
               await supabase.from("cart_items").update(updatePayload).eq("id", existing.id);
@@ -367,13 +369,14 @@ export const useCartStore = create<CartStore>()(
                 price_snapshot: item.price,
               };
 
-              if (!usesVariantColumns(response.error)) {
-                insertPayload.size = item.size;
-                insertPayload.color = item.color;
-                insertPayload.short_description = item.shortDescription;
+              const onConflict = supportsVariantColumns ? "user_id,product_id,size,color" : "user_id,product_id";
+              if (supportsVariantColumns) {
+                insertPayload.size = item.size ?? "";
+                insertPayload.color = item.color ?? "";
+                insertPayload.short_description = item.shortDescription ?? "";
               }
 
-              await supabase.from("cart_items").insert(insertPayload);
+              await supabase.from("cart_items").upsert(insertPayload, { onConflict });
             }
           } catch (err) {
             // eslint-disable-next-line no-console
