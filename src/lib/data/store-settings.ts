@@ -1,7 +1,7 @@
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { products as fallbackProducts } from "@/lib/data/products";
-import { readStorageJson, writeStorageJson } from "@/lib/data/storage-json";
 
-const STORAGE_SETTINGS_OBJECT = "app-data/store-settings.json";
+const TABLE_NAME = "store_settings";
 
 export interface StoreSettings {
   storeName: string;
@@ -26,25 +26,24 @@ export const defaultStoreSettings: StoreSettings = {
 };
 
 function normalizeList(values: unknown, fallback: string[]) {
-  const result = Array.isArray(values)
-    ? values.map((value) => String(value).trim()).filter(Boolean)
-    : fallback;
+  const result = Array.isArray(values) ? values.map((value) => String(value).trim()).filter(Boolean) : fallback;
   return Array.from(new Set(result));
 }
 
 export async function loadStoreSettings(): Promise<StoreSettings> {
-  const remoteSettings = await readStorageJson<Partial<StoreSettings>>(STORAGE_SETTINGS_OBJECT);
-  if (!remoteSettings) return defaultStoreSettings;
+  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const { data } = await supabase.from(TABLE_NAME).select("*").eq("singleton_key", "default").maybeSingle();
+  if (!data) return defaultStoreSettings;
 
   return {
-    storeName: typeof remoteSettings.storeName === "string" ? remoteSettings.storeName : defaultStoreSettings.storeName,
-    supportEmail: typeof remoteSettings.supportEmail === "string" ? remoteSettings.supportEmail : defaultStoreSettings.supportEmail,
-    supportPhone: typeof remoteSettings.supportPhone === "string" ? remoteSettings.supportPhone : defaultStoreSettings.supportPhone,
-    shippingMessage: typeof remoteSettings.shippingMessage === "string" ? remoteSettings.shippingMessage : defaultStoreSettings.shippingMessage,
-    currency: typeof remoteSettings.currency === "string" ? remoteSettings.currency : defaultStoreSettings.currency,
-    categories: normalizeList(remoteSettings.categories, defaultStoreSettings.categories),
-    brands: normalizeList(remoteSettings.brands, defaultStoreSettings.brands),
-    featuredNote: typeof remoteSettings.featuredNote === "string" ? remoteSettings.featuredNote : defaultStoreSettings.featuredNote,
+    storeName: typeof data.store_name === "string" ? data.store_name : defaultStoreSettings.storeName,
+    supportEmail: typeof data.support_email === "string" ? data.support_email : defaultStoreSettings.supportEmail,
+    supportPhone: typeof data.support_phone === "string" ? data.support_phone : defaultStoreSettings.supportPhone,
+    shippingMessage: typeof data.shipping_message === "string" ? data.shipping_message : defaultStoreSettings.shippingMessage,
+    currency: typeof data.currency === "string" ? data.currency : defaultStoreSettings.currency,
+    categories: normalizeList(data.categories, defaultStoreSettings.categories),
+    brands: normalizeList(data.brands, defaultStoreSettings.brands),
+    featuredNote: typeof data.featured_note === "string" ? data.featured_note : defaultStoreSettings.featuredNote,
   };
 }
 
@@ -61,6 +60,26 @@ export async function saveStoreSettings(settings: Partial<StoreSettings>) {
     featuredNote: typeof settings.featuredNote === "string" ? settings.featuredNote : current.featuredNote,
   };
 
-  await writeStorageJson(STORAGE_SETTINGS_OBJECT, nextSettings);
+  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const { error } = await supabase.from(TABLE_NAME).upsert(
+    {
+      singleton_key: "default",
+      store_name: nextSettings.storeName,
+      support_email: nextSettings.supportEmail,
+      support_phone: nextSettings.supportPhone,
+      shipping_message: nextSettings.shippingMessage,
+      currency: nextSettings.currency,
+      categories: nextSettings.categories,
+      brands: nextSettings.brands,
+      featured_note: nextSettings.featuredNote,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "singleton_key" },
+  );
+
+  if (error) {
+    throw error;
+  }
+
   return nextSettings;
 }

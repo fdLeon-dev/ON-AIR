@@ -1,6 +1,6 @@
-import { readStorageJson, writeStorageJson } from "@/lib/data/storage-json";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-const STORAGE_BANNERS_OBJECT = "app-data/banners.json";
+const TABLE_NAME = "banners";
 
 export interface StoreBanner {
   id: string;
@@ -22,27 +22,38 @@ export const defaultBanners: StoreBanner[] = [
   },
 ];
 
-function normalizeBanner(value: Partial<StoreBanner> & { id?: string }): StoreBanner {
+function mapRowToBanner(row: Record<string, unknown>): StoreBanner {
   return {
-    id: value.id ?? crypto.randomUUID(),
-    title: String(value.title ?? ""),
-    subtitle: String(value.subtitle ?? ""),
-    imageUrl: String(value.imageUrl ?? ""),
-    href: String(value.href ?? "/catalog"),
-    active: value.active !== false,
+    id: String(row.id ?? crypto.randomUUID()),
+    title: String(row.title ?? ""),
+    subtitle: String(row.subtitle ?? ""),
+    imageUrl: String(row.image_url ?? ""),
+    href: String(row.href ?? "/catalog"),
+    active: Boolean(row.active ?? true),
   };
 }
 
 export async function loadBanners(): Promise<StoreBanner[]> {
-  const remoteBanners = await readStorageJson<unknown[]>(STORAGE_BANNERS_OBJECT);
-  if (!Array.isArray(remoteBanners)) return defaultBanners;
-
-  return remoteBanners
-    .filter((entry): entry is Record<string, unknown> => typeof entry === "object" && entry !== null)
-    .map((entry) => normalizeBanner(entry as Partial<StoreBanner>));
+  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const { data, error } = await supabase.from(TABLE_NAME).select("*").order("created_at", { ascending: false });
+  if (error || !Array.isArray(data) || data.length === 0) return defaultBanners;
+  return data.map((row) => mapRowToBanner(row as Record<string, unknown>));
 }
 
 export async function saveBanners(banners: StoreBanner[]) {
-  await writeStorageJson(STORAGE_BANNERS_OBJECT, banners.map(normalizeBanner));
-  return banners.map(normalizeBanner);
+  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const rows = banners.map((banner) => ({
+    id: banner.id,
+    title: banner.title,
+    subtitle: banner.subtitle,
+    image_url: banner.imageUrl,
+    href: banner.href,
+    active: banner.active,
+    updated_at: new Date().toISOString(),
+  }));
+  const { error } = await supabase.from(TABLE_NAME).upsert(rows, { onConflict: "id" });
+  if (error) {
+    throw error;
+  }
+  return banners;
 }
