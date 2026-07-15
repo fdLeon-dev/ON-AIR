@@ -96,9 +96,10 @@ function HeroSliderConfig({
                       nextImages[index] = event.target.value;
                       updateImages(nextImages);
                     }}
-                    placeholder="URL de imagen"
-                    className="mt-2 w-full rounded-full border border-white/10 bg-zinc-950/80 px-4 py-3 text-sm text-white outline-none focus:border-emerald-400/40"
+                    placeholder="https://project.supabase.co/storage/v1/object/public/productos/imagen.jpg"
+                    className="mt-2 w-full rounded-full border border-white/10 bg-zinc-950/80 px-4 py-3 text-xs text-white placeholder-zinc-600 outline-none focus:border-emerald-400/40"
                   />
+                  <p className="mt-1 text-xs text-zinc-500">Ingresa la URL completa de la imagen desde Supabase Storage (bucket: productos)</p>
                 </div>
               </div>
 

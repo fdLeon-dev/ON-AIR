@@ -133,6 +133,8 @@ create table if not exists public.order_histories (
 
 create table if not exists public.hero_config (
   config_key text primary key,
+  -- Left carousel images: JSONB array of Supabase Storage URLs
+  -- Example: ["https://project.supabase.co/storage/v1/object/public/productos/hero-left-1.jpg", ...]
   left_card_images jsonb not null default '[]'::jsonb,
   left_carousel_enabled boolean not null default false,
   left_carousel_autoplay boolean not null default true,
@@ -141,6 +143,8 @@ create table if not exists public.hero_config (
   left_carousel_transition text not null default 'fade',
   left_carousel_interval integer not null default 3000,
   left_carousel_transition_duration integer not null default 300,
+  -- Right carousel images: JSONB array of Supabase Storage URLs
+  -- Example: ["https://project.supabase.co/storage/v1/object/public/productos/hero-right-1.jpg", ...]
   right_card_images jsonb not null default '[]'::jsonb,
   right_carousel_enabled boolean not null default false,
   right_carousel_autoplay boolean not null default true,
