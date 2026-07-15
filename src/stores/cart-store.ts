@@ -421,58 +421,39 @@ export const useCartStore = create<CartStore>()(
               }
             }
 
+            // Determine if DB supports variant columns
             let supportsVariantColumns = true;
-            let response = await supabase
+            const checkResponse = await supabase
               .from("cart_items")
-              .select("id, quantity")
-              .match({
-                user_id: userId,
-                product_id: productUuid,
-                size: item.size ?? "",
-                color: item.color ?? "",
-              })
-              .maybeSingle();
+              .select("id")
+              .eq("user_id", userId)
+              .eq("product_id", productUuid)
+              .limit(1);
 
-            if (response.error && usesVariantColumns(response.error)) {
+            if (checkResponse.error && usesVariantColumns(checkResponse.error)) {
               supportsVariantColumns = false;
-              response = await supabase
-                .from("cart_items")
-                .select("id, quantity")
-                .match({ user_id: userId, product_id: productUuid })
-                .maybeSingle();
             }
 
-            const existing = response.data;
-            if (existing) {
-              const updatePayload: Record<string, unknown> = {
-                quantity: existing.quantity + item.quantity,
-                price_snapshot: item.price,
-                updated_at: new Date().toISOString(),
-              };
+            // Upsert: replace local item in DB (don't add quantities)
+            const upsertPayload: Record<string, unknown> = {
+              user_id: userId,
+              product_id: productUuid,
+              quantity: item.quantity,
+              price_snapshot: item.price,
+            };
 
-              if (supportsVariantColumns) {
-                updatePayload.size = item.size ?? "";
-                updatePayload.color = item.color ?? "";
-                updatePayload.short_description = item.shortDescription ?? "";
-              }
+            if (supportsVariantColumns) {
+              upsertPayload.size = item.size ?? "";
+              upsertPayload.color = item.color ?? "";
+              upsertPayload.short_description = item.shortDescription ?? "";
+            }
 
-              await supabase.from("cart_items").update(updatePayload).eq("id", existing.id);
-            } else {
-              const insertPayload: Record<string, unknown> = {
-                user_id: userId,
-                product_id: productUuid,
-                quantity: item.quantity,
-                price_snapshot: item.price,
-              };
+            const onConflict = supportsVariantColumns ? "user_id,product_id,size,color" : "user_id,product_id";
+            const { error: upsertError } = await supabase.from("cart_items").upsert(upsertPayload, { onConflict });
 
-              const onConflict = supportsVariantColumns ? "user_id,product_id,size,color" : "user_id,product_id";
-              if (supportsVariantColumns) {
-                insertPayload.size = item.size ?? "";
-                insertPayload.color = item.color ?? "";
-                insertPayload.short_description = item.shortDescription ?? "";
-              }
-
-              await supabase.from("cart_items").upsert(insertPayload, { onConflict });
+            if (upsertError) {
+              // eslint-disable-next-line no-console
+              console.warn("Error upserting local cart item:", upsertError);
             }
           } catch (err) {
             // eslint-disable-next-line no-console
@@ -480,7 +461,7 @@ export const useCartStore = create<CartStore>()(
           }
         }
 
-        // refresh canonical state
+        // Refresh canonical state from DB
         await get().syncFromSupabase();
       },
     }),
