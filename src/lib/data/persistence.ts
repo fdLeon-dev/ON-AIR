@@ -432,15 +432,16 @@ export async function loadFeaturedCategories(useFallback = true): Promise<Featur
   try {
     const supabase = await getSessionSupabase();
     const { data, error } = await supabase.from("featured_categories").select("*").order("display_order", { ascending: true });
-    if (!error && Array.isArray(data)) {
+    if (!error && Array.isArray(data) && data.length > 0) {
       return data.map((row) => normalizeFeaturedCategory(row as Record<string, unknown>));
     }
-  } catch {
-    /* ignore */
-  }
-
-  if (!useFallback) {
-    return [];
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.warn("Error loading featured categories:", error);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn("Exception loading featured categories:", err);
   }
 
   return [];

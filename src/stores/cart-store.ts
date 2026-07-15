@@ -145,7 +145,13 @@ export const useCartStore = create<CartStore>()(
               updatePayload.short_description = item.shortDescription ?? "";
             }
 
-            const { error: updateError } = await supabase.from("cart_items").update(updatePayload).eq("id", existing.id);
+            const { error: updateError } = await supabase
+              .from("cart_items")
+              .update(updatePayload)
+              .match({
+                id: existing.id,
+                user_id: userId,
+              });
             if (isNonEmptyError(updateError)) {
               // eslint-disable-next-line no-console
               console.warn("Supabase update returned error (non-empty):", updateError);
