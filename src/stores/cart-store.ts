@@ -55,14 +55,20 @@ export const useCartStore = create<CartStore>()(
         const user = await supabase?.auth.getUser();
         const userId = user?.data?.user?.id;
 
+        // Helper to match items by product + variant
+        const itemMatches = (a: CartItem, b: CartItem) =>
+          a.productId === b.productId &&
+          (a.size ?? "") === (b.size ?? "") &&
+          (a.color ?? "") === (b.color ?? "");
+
         // If no user or supabase client, fall back to local-only behavior
         if (!supabase || !userId) {
           set((state) => {
-            const existing = state.items.find((entry) => entry.id === item.id);
+            const existing = state.items.find((entry) => itemMatches(entry, item));
             if (existing) {
               return {
                 items: state.items.map((entry) =>
-                  entry.id === item.id ? { ...entry, quantity: entry.quantity + item.quantity } : entry,
+                  itemMatches(entry, item) ? { ...entry, quantity: entry.quantity + item.quantity } : entry,
                 ),
               };
             }
@@ -187,11 +193,11 @@ export const useCartStore = create<CartStore>()(
           // eslint-disable-next-line no-console
           console.error("Cart sync error, falling back to local cart:", errMsg);
           set((state) => {
-            const existing = state.items.find((entry) => entry.id === item.id);
+            const existing = state.items.find((entry) => itemMatches(entry, item));
             if (existing) {
               return {
                 items: state.items.map((entry) =>
-                  entry.id === item.id ? { ...entry, quantity: entry.quantity + item.quantity } : entry,
+                  itemMatches(entry, item) ? { ...entry, quantity: entry.quantity + item.quantity } : entry,
                 ),
               };
             }
