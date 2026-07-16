@@ -5,8 +5,11 @@ import Link from "next/link";
 import type { Product, ProductCategory, ProductStatus } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Panel, formatCurrency } from "@/components/dashboard/dashboard-ui";
+import { ImagePickerModal } from "@/components/dashboard/ImagePickerModal";
+import { normalizeProductImagePath } from "@/lib/utils";
 
 const statusOptions: ProductStatus[] = ["Nuevo", "Destacado", "Oferta", "Popular"];
+type ProductImageField = "image1" | "image2" | "image3" | "image4";
 
 export function ProductManager({
   initialProducts,
@@ -23,6 +26,7 @@ export function ProductManager({
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<(Partial<Product> & { sizesInput?: string; sizeStockInput?: string; colorsInput?: string }) | null>(null);
+  const [pickerTarget, setPickerTarget] = useState<{ mode: "create" | "edit"; field: ProductImageField } | null>(null);
   const [form, setForm] = useState({
     name: "",
     brand: brandOptions[0] ?? "Peak Sport",
@@ -72,6 +76,29 @@ export function ProductManager({
     [products, search],
   );
 
+  const normalizeImageFields = <T extends Record<string, unknown>>(payload: T): T => ({
+    ...payload,
+    image1: normalizeProductImagePath(String(payload.image1 ?? "")),
+    image2: normalizeProductImagePath(String(payload.image2 ?? "")),
+    image3: normalizeProductImagePath(String(payload.image3 ?? "")),
+    image4: normalizeProductImagePath(String(payload.image4 ?? "")),
+  });
+
+  const applyPickedImage = (path: string) => {
+    if (!pickerTarget) return;
+    const relativePath = normalizeProductImagePath(path);
+
+    if (pickerTarget.mode === "create") {
+      setForm((current) => ({ ...current, [pickerTarget.field]: relativePath }));
+      return;
+    }
+
+    setDraft((current) => {
+      if (!current) return current;
+      return { ...current, [pickerTarget.field]: relativePath };
+    });
+  };
+
   const startEdit = (product: Product) => {
     setEditingId(product.id);
     setDraft({
@@ -103,6 +130,7 @@ export function ProductManager({
     setMessage(null);
 
     const { sizesInput = "", sizeStockInput = "", colorsInput = "", ...restDraft } = draft;
+    const normalizedDraft = normalizeImageFields(restDraft);
     const { sizes, sizeStock, totalStock } = buildSizePayload(sizesInput, sizeStockInput);
     const colors = parseColorsInput(colorsInput);
     const response = await fetch(`/api/products/${product.id}`, {
@@ -110,7 +138,7 @@ export function ProductManager({
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...restDraft,
+        ...normalizedDraft,
         sizes,
         sizeStock,
         colors,
@@ -140,6 +168,7 @@ export function ProductManager({
     setMessage(null);
 
     const { sizesInput, sizeStockInput, colorsInput, ...restForm } = form;
+    const normalizedForm = normalizeImageFields(restForm);
     const { sizes, sizeStock, totalStock } = buildSizePayload(sizesInput, sizeStockInput);
     const colors = parseColorsInput(colorsInput);
     const response = await fetch("/api/products/create", {
@@ -147,7 +176,7 @@ export function ProductManager({
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...restForm,
+        ...normalizedForm,
         sizes,
         sizeStock,
         colors,
@@ -229,13 +258,25 @@ export function ProductManager({
             {statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}
           </select>
           <div className="grid gap-2 md:grid-cols-2 md:col-span-2">
-            <input type="url" className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="URL pública imagen 1" value={form.image1} onChange={(event) => setForm((current) => ({ ...current, image1: event.target.value }))} />
-            <input type="url" className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="URL pública imagen 2" value={form.image2} onChange={(event) => setForm((current) => ({ ...current, image2: event.target.value }))} />
-            <input type="url" className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="URL pública imagen 3" value={form.image3} onChange={(event) => setForm((current) => ({ ...current, image3: event.target.value }))} />
-            <input type="url" className="rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="URL pública imagen 4" value={form.image4} onChange={(event) => setForm((current) => ({ ...current, image4: event.target.value }))} />
+            <div className="flex gap-2">
+              <input type="text" className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Path imagen 1 (ej: products/item-1.webp)" value={form.image1} onChange={(event) => setForm((current) => ({ ...current, image1: normalizeProductImagePath(event.target.value) }))} />
+              <Button type="button" variant="secondary" size="sm" onClick={() => setPickerTarget({ mode: "create", field: "image1" })}>Seleccionar del bucket</Button>
+            </div>
+            <div className="flex gap-2">
+              <input type="text" className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Path imagen 2 (ej: products/item-2.webp)" value={form.image2} onChange={(event) => setForm((current) => ({ ...current, image2: normalizeProductImagePath(event.target.value) }))} />
+              <Button type="button" variant="secondary" size="sm" onClick={() => setPickerTarget({ mode: "create", field: "image2" })}>Seleccionar del bucket</Button>
+            </div>
+            <div className="flex gap-2">
+              <input type="text" className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Path imagen 3 (ej: products/item-3.webp)" value={form.image3} onChange={(event) => setForm((current) => ({ ...current, image3: normalizeProductImagePath(event.target.value) }))} />
+              <Button type="button" variant="secondary" size="sm" onClick={() => setPickerTarget({ mode: "create", field: "image3" })}>Seleccionar del bucket</Button>
+            </div>
+            <div className="flex gap-2">
+              <input type="text" className="flex-1 rounded-full border border-white/10 bg-white/5 px-4 py-3" placeholder="Path imagen 4 (ej: products/item-4.webp)" value={form.image4} onChange={(event) => setForm((current) => ({ ...current, image4: normalizeProductImagePath(event.target.value) }))} />
+              <Button type="button" variant="secondary" size="sm" onClick={() => setPickerTarget({ mode: "create", field: "image4" })}>Seleccionar del bucket</Button>
+            </div>
           </div>
           <div className="md:col-span-2 rounded-[1.25rem] border border-dashed border-white/10 bg-white/5 p-4 text-sm text-zinc-400">
-            Usa URLs públicas existentes del bucket <span className="font-semibold text-white">productos</span>. Ejemplo: <span className="break-all text-emerald-300">https://.../storage/v1/object/public/productos/mi-imagen.jpg</span>
+            Usa paths relativos del bucket <span className="font-semibold text-white">productos</span>. Ejemplo: <span className="break-all text-emerald-300">products/mi-imagen.jpg</span>
           </div>
           <textarea className="min-h-20 rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-3 md:col-span-2" placeholder="Descripción corta" value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} />
           <textarea className="min-h-24 rounded-[1.5rem] border border-white/10 bg-white/5 px-4 py-3 md:col-span-2" placeholder="Descripción larga" value={form.longDescription} onChange={(event) => setForm((current) => ({ ...current, longDescription: event.target.value }))} />
@@ -293,10 +334,22 @@ export function ProductManager({
                             {statusOptions.map((option) => <option key={option} value={option}>{option}</option>)}
                           </select>
                           <div className="grid gap-2 md:grid-cols-2">
-                            <input type="url" className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.image1 ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, image1: event.target.value } : current))} />
-                            <input type="url" className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.image2 ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, image2: event.target.value } : current))} />
-                            <input type="url" className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.image3 ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, image3: event.target.value } : current))} />
-                            <input type="url" className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.image4 ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, image4: event.target.value } : current))} />
+                            <div className="flex gap-2">
+                              <input type="text" className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.image1 ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, image1: normalizeProductImagePath(event.target.value) } : current))} />
+                              <Button type="button" variant="secondary" size="sm" onClick={() => setPickerTarget({ mode: "edit", field: "image1" })}>Seleccionar del bucket</Button>
+                            </div>
+                            <div className="flex gap-2">
+                              <input type="text" className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.image2 ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, image2: normalizeProductImagePath(event.target.value) } : current))} />
+                              <Button type="button" variant="secondary" size="sm" onClick={() => setPickerTarget({ mode: "edit", field: "image2" })}>Seleccionar del bucket</Button>
+                            </div>
+                            <div className="flex gap-2">
+                              <input type="text" className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.image3 ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, image3: normalizeProductImagePath(event.target.value) } : current))} />
+                              <Button type="button" variant="secondary" size="sm" onClick={() => setPickerTarget({ mode: "edit", field: "image3" })}>Seleccionar del bucket</Button>
+                            </div>
+                            <div className="flex gap-2">
+                              <input type="text" className="w-full rounded-full border border-white/10 bg-white/5 px-3 py-2" value={draft?.image4 ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, image4: normalizeProductImagePath(event.target.value) } : current))} />
+                              <Button type="button" variant="secondary" size="sm" onClick={() => setPickerTarget({ mode: "edit", field: "image4" })}>Seleccionar del bucket</Button>
+                            </div>
                           </div>
                           <textarea className="min-h-20 w-full rounded-[1rem] border border-white/10 bg-white/5 px-3 py-2" value={draft?.description ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, description: event.target.value } : current))} />
                           <textarea className="min-h-24 w-full rounded-[1rem] border border-white/10 bg-white/5 px-3 py-2" value={draft?.longDescription ?? ""} onChange={(event) => setDraft((current) => (current ? { ...current, longDescription: event.target.value } : current))} />
@@ -357,6 +410,15 @@ export function ProductManager({
           </table>
         </div>
       </Panel>
+
+      <ImagePickerModal
+        open={Boolean(pickerTarget)}
+        onClose={() => setPickerTarget(null)}
+        onSelect={(path) => {
+          applyPickedImage(path);
+          setPickerTarget(null);
+        }}
+      />
     </div>
   );
 }

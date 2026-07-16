@@ -4,6 +4,7 @@ import { OrderStatusActions } from "@/components/dashboard/order-status-actions"
 import { Panel, formatCurrency } from "@/components/dashboard/dashboard-ui";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { resolveAdminAccess } from "@/lib/admin/auth";
+import { resolveProductImageUrl } from "@/lib/utils";
 
 type OrderDetail = {
   id: string;
@@ -116,7 +117,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
           <div className="space-y-4">
             {items.map((item, index) => {
               const product = item.products?.[0];
-              const image = product?.image1 ?? product?.image2 ?? product?.image3 ?? product?.image4 ?? "";
+              const image = resolveProductImageUrl(product?.image1 ?? product?.image2 ?? product?.image3 ?? product?.image4 ?? "");
               return (
                 <div key={`${order.id}-${index}`} className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-4">

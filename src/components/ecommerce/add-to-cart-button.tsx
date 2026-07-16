@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCartStore } from "@/stores/cart-store";
 import type { Product } from "@/types";
 import { CartToast } from "@/components/ecommerce/cart-toast";
+import { resolveProductImageUrl } from "@/lib/utils";
 
 interface AddToCartButtonProps {
   product: Product;
@@ -18,6 +19,7 @@ export function AddToCartButton({ product, className, label = "Agregar al carrit
   const router = useRouter();
   const addItem = useCartStore((state) => state.addItem);
   const [visible, setVisible] = useState(false);
+  const cartImage = resolveProductImageUrl(product.image1 || product.image2 || product.image3 || product.image4);
 
   useEffect(() => {
     if (!visible) return;
@@ -34,7 +36,7 @@ export function AddToCartButton({ product, className, label = "Agregar al carrit
       productId: product.id,
       name: product.name,
       price: product.offerPrice ?? product.price,
-      image: product.image1 || product.image2 || product.image3 || product.image4,
+      image: cartImage,
       quantity: 1,
       size: selectedSize || product.sizes[0] || "",
       color: selectedColor || product.colors[0] || "",

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { useCartStore } from "@/stores/cart-store";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, resolveProductImageUrl } from "@/lib/utils";
 
 export default function CartPage() {
   const items = useCartStore((state) => state.items);
@@ -32,7 +32,7 @@ export default function CartPage() {
                   <div key={item.id} className="flex flex-col gap-4 rounded-[1.5rem] border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
                       <div className="relative h-20 w-20 overflow-hidden rounded-[1rem] border border-white/10">
-                        <Image src={item.image} alt={item.name} fill className="object-cover" />
+                        <Image src={resolveProductImageUrl(item.image)} alt={item.name} fill className="object-cover" />
                       </div>
                       <div>
                         <p className="font-medium text-white">{item.name}</p>

@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { products as fallbackProducts } from "@/lib/data/products";
+import { normalizeProductImagePath } from "@/lib/utils";
 import type { FeaturedCategory, HeroConfig, Product, ProductCategory, ProductStatus } from "@/types";
 
 const STORAGE_BUCKET = "productos";
@@ -49,10 +50,10 @@ async function getSessionSupabase() {
 function getImageFields(raw: Record<string, unknown>): [string, string, string, string] {
   const images = Array.isArray(raw?.images) ? raw.images : [];
   return [
-    String(raw?.image1 ?? images[0] ?? ""),
-    String(raw?.image2 ?? images[1] ?? ""),
-    String(raw?.image3 ?? images[2] ?? ""),
-    String(raw?.image4 ?? images[3] ?? ""),
+    normalizeProductImagePath(raw?.image1 ?? images[0] ?? ""),
+    normalizeProductImagePath(raw?.image2 ?? images[1] ?? ""),
+    normalizeProductImagePath(raw?.image3 ?? images[2] ?? ""),
+    normalizeProductImagePath(raw?.image4 ?? images[3] ?? ""),
   ];
 }
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Heart, ShoppingBag } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, resolveProductImageUrl } from "@/lib/utils";
 import { useFavoritesStore } from "@/stores/favorites-store";
 import type { Product } from "@/types";
 import { AddToCartButton } from "@/components/ecommerce/add-to-cart-button";
@@ -15,12 +15,13 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const toggleFavorite = useFavoritesStore((state) => state.toggle);
   const isFavorite = useFavoritesStore((state) => state.isFavorite(product.id));
+  const coverImage = resolveProductImageUrl(product.image1 || product.image2 || product.image3 || product.image4);
 
   return (
     <article className="group overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/70 shadow-[0_20px_70px_rgba(0,0,0,0.25)]">
       <Link href={`/product/${product.slug}`} className="relative aspect-[4/5] overflow-hidden block">
         <Image
-          src={product.image1 || product.image2 || product.image3 || product.image4}
+          src={coverImage}
           alt={product.name}
           fill
           sizes="(max-width: 768px) 100vw, 33vw"

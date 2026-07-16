@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import type { CSSProperties } from "react";
+import { resolveProductImageUrl } from "@/lib/utils";
 
 interface ProductGalleryProps {
   images: string[] | undefined;
@@ -17,7 +18,7 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
   const galleryImages = useMemo(() => {
     const fallbackImage =
       "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=900&q=80";
-    const validImages = (images ?? []).filter(Boolean);
+    const validImages = (images ?? []).map((image) => resolveProductImageUrl(image ?? "")).filter(Boolean);
     const result = validImages.length ? [...validImages] : [fallbackImage];
 
     while (result.length < 4) {
