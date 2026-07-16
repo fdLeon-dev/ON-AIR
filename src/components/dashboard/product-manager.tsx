@@ -29,7 +29,7 @@ export function ProductManager({
   const [pickerTarget, setPickerTarget] = useState<{ mode: "create" | "edit"; field: ProductImageField } | null>(null);
   const [form, setForm] = useState({
     name: "",
-    brand: brandOptions[0] ?? "Peak Sport",
+    brand: brandOptions[0] ?? "RUNTIME®",
     category: (categoryOptions[0] ?? "Conjuntos deportivos") as ProductCategory,
     subcategory: "Training",
     price: "100000",
@@ -199,7 +199,7 @@ export function ProductManager({
     setMessage("Producto creado.");
     setForm({
       name: "",
-      brand: brandOptions[0] ?? "Peak Sport",
+      brand: brandOptions[0] ?? "RUNTIME®",
       category: (categoryOptions[0] ?? "Conjuntos deportivos") as ProductCategory,
       subcategory: "Training",
       price: "100000",

@@ -4,7 +4,7 @@ import { AdminShell } from "@/components/dashboard/admin-shell";
 import { resolveAdminAccess } from "@/lib/admin/auth";
 
 export const metadata: Metadata = {
-  title: "Admin | Peak Sport",
+  title: "Admin | RUNTIME®",
 };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

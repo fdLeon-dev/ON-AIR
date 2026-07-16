@@ -1,7 +1,7 @@
 # Configuración de Imágenes Hero/Banners
 
 ## Descripción
-Las imágenes del hero carousel (banners) en Peak Sport se almacenan en **Supabase Storage** en el bucket `productos` y se configran desde `/admin/banners`.
+Las imágenes del hero carousel (banners) en RUNTIME® se almacenan en **Supabase Storage** en el bucket `productos` y se configran desde `/admin/banners`.
 
 ## Cómo Obtener URLs de Supabase Storage
 

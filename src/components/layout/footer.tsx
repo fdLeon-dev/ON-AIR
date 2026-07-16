@@ -5,7 +5,7 @@ export function Footer() {
     <footer className="border-t border-white/10 bg-neutral-950 px-4 py-16 text-zinc-400 sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-4">
         <div>
-          <h3 className="mb-4 text-lg font-semibold text-white">PEAK SPORT</h3>
+          <h3 className="mb-4 text-lg font-semibold text-white">RUNTIME®</h3>
           <p className="max-w-sm text-sm leading-7">
             Ropa deportiva premium para entrenar con una estética moderna, técnica y minimalista.
           </p>

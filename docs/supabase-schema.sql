@@ -1,4 +1,4 @@
--- Peak Sport complete Supabase schema (FIXED)
+-- RUNTIME® complete Supabase schema (FIXED)
 -- Paste this entire script into Supabase SQL Editor and run it.
 -- This schema is idempotent: uses CREATE TABLE IF NOT EXISTS and DROP IF EXISTS
 
@@ -53,7 +53,7 @@ create table if not exists public.products (
   id uuid primary key default gen_random_uuid(),
   slug text not null unique,
   name text not null,
-  brand text not null default 'Peak Sport',
+  brand text not null default 'RUNTIME®',
   category text not null default 'Conjuntos deportivos',
   subcategory text not null default 'General',
   price numeric(12,2) not null default 0,
@@ -172,8 +172,8 @@ create table if not exists public.featured_categories (
 create table if not exists public.store_settings (
   id uuid primary key default gen_random_uuid(),
   singleton_key text not null unique default 'default',
-  store_name text not null default 'Peak Sport',
-  support_email text not null default 'support@peak-sport.example',
+  store_name text not null default 'RUNTIME®',
+  support_email text not null default 'support@runtime.example',
   support_phone text not null default '+598 0000 0000',
   shipping_message text not null default 'Envíos rápidos en 24/48h y cambios fáciles.',
   currency text not null default 'UYU',
@@ -467,13 +467,13 @@ insert into public.store_settings (
 )
 values (
   'default',
-  'Peak Sport',
-  'support@peak-sport.example',
+  'RUNTIME®',
+  'support@runtime.example',
   '+598 0000 0000',
   'Envíos rápidos en 24/48h y cambios fáciles.',
   'UYU',
   '["Conjuntos deportivos","Buzos","Medias anti deslizante","Camperas","Remeras","Shorts","Accesorios"]'::jsonb,
-  '["Peak Sport"]'::jsonb,
+  '["RUNTIME®"]'::jsonb,
   'Colecciones premium pensadas para entrenamiento y uso urbano.'
 )
 on conflict (singleton_key) do update

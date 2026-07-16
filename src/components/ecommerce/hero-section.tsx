@@ -11,8 +11,8 @@ interface HeroSectionProps {
 }
 
 export function HeroSection({ heroConfig }: HeroSectionProps) {
-  const leftFallback = "/peak.png";
-  const rightFallback = "/peak.png";
+  const leftFallback = "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1200&q=80";
+  const rightFallback = "https://images.unsplash.com/photo-1518459031867-a89b944bffe4?auto=format&fit=crop&w=1200&q=80";
 
   return (
     <section className="relative isolate overflow-hidden border-b border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.04),_transparent_45%)] px-4 py-24 sm:px-6 lg:px-8 lg:py-32">

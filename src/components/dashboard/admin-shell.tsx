@@ -76,7 +76,7 @@ export function AdminShell({
                 <Store className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold tracking-[0.2em] text-white">PEAK SPORT</p>
+                <p className="text-sm font-semibold tracking-[0.2em] text-white">RUNTIME®</p>
                 <p className="text-xs text-zinc-400">Admin panel</p>
               </div>
             </Link>

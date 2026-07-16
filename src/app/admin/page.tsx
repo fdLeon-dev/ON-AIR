@@ -13,7 +13,7 @@ export default async function AdminDashboardPage() {
     <div className="space-y-6">
       <section className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <div className="rounded-[2.25rem] border border-white/10 bg-gradient-to-br from-emerald-400/15 via-white/5 to-sky-400/10 p-6">
-          <p className="text-sm uppercase tracking-[0.35em] text-emerald-200/80">Peak Sport Admin</p>
+          <p className="text-sm uppercase tracking-[0.35em] text-emerald-200/80">RUNTIME® Admin</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Controlamos la operación desde un panel moderno y simple.</h1>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-300">
             Esta nueva base reemplaza el panel anterior y centraliza productos, pedidos, clientes, cupones y configuración de tienda.

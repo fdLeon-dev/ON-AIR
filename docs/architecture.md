@@ -1,4 +1,4 @@
-# Peak Sport — arquitectura propuesta
+# RUNTIME® — arquitectura propuesta
 
 ## Objetivo
 Diseñar una tienda deportiva premium, modular y preparada para producción con Next.js 15, TypeScript, Tailwind, Zustand, Framer Motion y Supabase.

@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://peak-sport.example/sitemap.xml",
+    sitemap: "https://runtime.example/sitemap.xml",
   };
 }

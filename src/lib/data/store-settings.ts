@@ -15,8 +15,8 @@ export interface StoreSettings {
 }
 
 export const defaultStoreSettings: StoreSettings = {
-  storeName: "Peak Sport",
-  supportEmail: "support@peak-sport.example",
+  storeName: "RUNTIME®",
+  supportEmail: "support@runtime.example",
   supportPhone: "+598 0000 0000",
   shippingMessage: "Envíos rápidos en 24/48h y cambios fáciles.",
   currency: "UYU",

@@ -134,7 +134,7 @@ function normalizeProduct(raw: Record<string, unknown>): Product {
     id: String(raw.id ?? crypto.randomUUID()),
     slug: String(raw.slug ?? String(raw.name ?? "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
     name: String(raw.name ?? ""),
-    brand: String(raw.brand ?? "Peak Sport"),
+    brand: String(raw.brand ?? "RUNTIME®"),
     category: toProductCategory(raw.category),
     subcategory: String(raw.subcategory ?? "General"),
     price: Number(raw.price ?? 0),

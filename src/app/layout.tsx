@@ -14,9 +14,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Peak Sport | Ropa deportiva premium",
-  description: "Tienda deportiva premium con performance, estilo urbano y experiencias de compra modernas.",
-  metadataBase: new URL("https://peak-sport.example"),
+  applicationName: "RUNTIME®",
+  title: "RUNTIME® | Indumentaria Deportiva Premium",
+  description: "RUNTIME® ofrece indumentaria deportiva premium con diseño tecnico, estilo urbano y una experiencia de compra moderna.",
+  metadataBase: new URL("https://runtime.example"),
+  openGraph: {
+    title: "RUNTIME® | Indumentaria Deportiva Premium",
+    description: "Descubre la nueva coleccion de RUNTIME®: performance, diseno premium y tecnologia textil para entrenar y moverte mejor.",
+    type: "website",
+    url: "https://runtime.example",
+    siteName: "RUNTIME®",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "RUNTIME® | Indumentaria Deportiva Premium",
+    description: "RUNTIME®: ropa deportiva premium con enfoque tecnico y estetica urbana.",
+  },
 };
 
 export default function RootLayout({
@@ -24,9 +37,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "RUNTIME®",
+    url: "https://runtime.example",
+    email: "support@runtime.example",
+    description: "Marca de indumentaria deportiva premium con foco en rendimiento y estilo urbano.",
+  };
+
   return (
     <html lang="es" className={`dark ${geistSans.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-black text-white">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
         <SupabaseSyncProvider>{children}</SupabaseSyncProvider>
       </body>
     </html>
