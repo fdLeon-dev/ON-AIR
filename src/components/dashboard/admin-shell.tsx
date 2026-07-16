@@ -41,6 +41,7 @@ const navigation: AdminNavigationItem[] = [
   { label: "Categorías", href: "/admin/categories", icon: <Tags className="h-4 w-4" />, description: "Taxonomía" },
   { label: "Marcas", href: "/admin/brands", icon: <Building2 className="h-4 w-4" />, description: "Branding" },
   { label: "Stock", href: "/admin/stock", icon: <Box className="h-4 w-4" />, description: "Inventario" },
+  { label: "Banners", href: "/admin/banners", icon: <Bell className="h-4 w-4" />, description: "Carruseles del hero" },
   { label: "Pedidos", href: "/admin/orders", icon: <ShoppingCart className="h-4 w-4" />, description: "Ventas y estados" },
   { label: "Clientes", href: "/admin/customers", icon: <Users className="h-4 w-4" />, description: "Usuarios y compras" },
   { label: "Cupones", href: "/admin/coupons", icon: <CircleDollarSign className="h-4 w-4" />, description: "Promociones" },

@@ -241,12 +241,32 @@ export function HeroConfigManager({ initialConfig }: HeroConfigManagerProps) {
     leftCarousel: createCarouselState(initialConfig.leftCarousel),
     rightCarousel: createCarouselState(initialConfig.rightCarousel),
   });
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [saving, setSaving] = useState(false);
 
   const saveConfig = async () => {
     setSaving(true);
     setStatus(null);
+
+    // Validation: at least one carousel must be enabled
+    if (!config.leftCarousel.enabled && !config.rightCarousel.enabled) {
+      setStatus({ message: "Debe activar al menos un carrusel.", type: "error" });
+      setSaving(false);
+      return;
+    }
+
+    // Validation: enabled carousels must have at least one image
+    if (config.leftCarousel.enabled && config.leftCarousel.images.filter(Boolean).length === 0) {
+      setStatus({ message: "El carrusel izquierdo debe tener al menos una imagen.", type: "error" });
+      setSaving(false);
+      return;
+    }
+
+    if (config.rightCarousel.enabled && config.rightCarousel.images.filter(Boolean).length === 0) {
+      setStatus({ message: "El carrusel derecho debe tener al menos una imagen.", type: "error" });
+      setSaving(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/admin/hero-config", {
@@ -257,12 +277,16 @@ export function HeroConfigManager({ initialConfig }: HeroConfigManagerProps) {
 
       if (!response.ok) {
         const body = await response.json();
-        setStatus(body?.error ?? "No se pudo guardar la configuración.");
+        const errorMessage = body?.error ?? "No se pudo guardar la configuración.";
+        setStatus({ message: errorMessage, type: "error" });
       } else {
-        setStatus("Configuración guardada correctamente.");
+        setStatus({ message: "✓ Configuración guardada correctamente.", type: "success" });
+        // Auto-clear success message after 3 seconds
+        setTimeout(() => setStatus(null), 3000);
       }
-    } catch {
-      setStatus("No se pudo guardar la configuración.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo guardar la configuración.";
+      setStatus({ message, type: "error" });
     } finally {
       setSaving(false);
     }
@@ -288,7 +312,11 @@ export function HeroConfigManager({ initialConfig }: HeroConfigManagerProps) {
           <Button onClick={saveConfig} disabled={saving}>
             {saving ? "Guardando..." : "Guardar configuración"}
           </Button>
-          {status ? <p className="text-sm text-zinc-400">{status}</p> : null}
+          {status ? (
+            <p className={`text-sm ${status.type === "success" ? "text-emerald-400" : "text-red-400"}`}>
+              {status.message}
+            </p>
+          ) : null}
         </div>
       </Panel>
     </div>
