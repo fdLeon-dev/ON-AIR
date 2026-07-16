@@ -416,12 +416,28 @@ export async function saveHeroConfig(config: Partial<HeroConfig>) {
 }
 
 function normalizeFeaturedCategory(raw: Record<string, unknown>): FeaturedCategory {
+  const rawSlug = String(raw.slug ?? "").toLowerCase();
+  const normalizedSlug = rawSlug.replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const rawImageUrl = String(raw.image_url ?? raw.imageUrl ?? "").trim();
+
+  const fallbackImageBySlug =
+    normalizedSlug.includes("conjunto") ? "/con-deportivos.png"
+      : normalizedSlug.includes("accesorio") ? "/camperas.png"
+      : normalizedSlug.includes("campera") ? "/camperas.png"
+      : normalizedSlug.includes("medias") ? "/medias.png"
+      : normalizedSlug.includes("buzo") ? "/buzos.png"
+      : "/con-deportivos.png";
+
+  const normalizedImageUrl = rawImageUrl.includes("via.placeholder.com") || !rawImageUrl
+    ? fallbackImageBySlug
+    : rawImageUrl;
+
   return {
     id: String(raw.id ?? raw.id ?? crypto.randomUUID()),
     name: String(raw.name ?? "").trim(),
-    slug: String(raw.slug ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+    slug: normalizedSlug,
     description: String(raw.description ?? "").trim(),
-    imageUrl: String(raw.image_url ?? raw.imageUrl ?? "").trim(),
+    imageUrl: normalizedImageUrl,
     displayOrder: Number(raw.display_order ?? raw.displayOrder ?? 0),
     isActive: Boolean(raw.is_active ?? raw.isActive ?? true),
     createdAt: String(raw.created_at ?? raw.createdAt ?? new Date().toISOString()),

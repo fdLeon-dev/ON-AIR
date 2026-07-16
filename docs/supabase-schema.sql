@@ -490,8 +490,8 @@ set store_name = excluded.store_name,
 -- Seed Data: Featured Categories (optional - can add sample categories)
 insert into public.featured_categories (name, slug, description, image_url, display_order, is_active)
 values
-  ('Conjuntos Deportivos', 'conjuntos-deportivos', 'Colecciones completas de ropa deportiva', 'https://via.placeholder.com/400x300?text=Conjuntos', 1, true),
-  ('Accesorios', 'accesorios', 'Complementos para tu entrenamiento', 'https://via.placeholder.com/400x300?text=Accesorios', 2, true)
+  ('Conjuntos Deportivos', 'conjuntos-deportivos', 'Colecciones completas de ropa deportiva', '/con-deportivos.png', 1, true),
+  ('Accesorios', 'accesorios', 'Complementos para tu entrenamiento', '/camperas.png', 2, true)
 on conflict (slug) do update
 set name = excluded.name,
     description = excluded.description,
