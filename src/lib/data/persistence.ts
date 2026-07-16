@@ -15,7 +15,7 @@ const defaultHeroConfig: HeroConfig = {
     infinite: true,
     pauseOnHover: true,
     transition: "fade",
-    interval: 3000,
+    interval: 4000,
     transitionDuration: 300,
   },
   rightCarousel: {
@@ -25,7 +25,7 @@ const defaultHeroConfig: HeroConfig = {
     infinite: true,
     pauseOnHover: true,
     transition: "fade",
-    interval: 3000,
+    interval: 4000,
     transitionDuration: 300,
   },
 };
@@ -71,8 +71,8 @@ function normalizeHeroBoolean(value: unknown, fallback: boolean): boolean {
 
 function normalizeHeroInterval(value: unknown): number {
   const parsed = Number(value ?? 0);
-  if (!Number.isFinite(parsed)) return 5;
-  return Math.max(2, Math.min(20, Math.round(parsed)));
+  if (!Number.isFinite(parsed)) return 4000;
+  return Math.max(1000, Math.round(parsed));
 }
 
 function normalizeHeroTransitionType(value: unknown): "fade" | "slide" {

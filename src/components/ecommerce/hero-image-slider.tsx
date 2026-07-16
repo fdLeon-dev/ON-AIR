@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { createClient } from "@/lib/supabase/client";
 import type { HeroCarouselSideConfig } from "@/types";
 
 interface HeroImageSliderProps {
@@ -10,8 +11,23 @@ interface HeroImageSliderProps {
   label: string;
 }
 
+const STORAGE_BUCKET = "productos";
+
+function resolveStorageImage(pathOrUrl: string, supabase: ReturnType<typeof createClient>) {
+  const value = pathOrUrl.trim();
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value) || value.startsWith("/")) return value;
+  const normalized = value.startsWith(`${STORAGE_BUCKET}/`) ? value.slice(STORAGE_BUCKET.length + 1) : value;
+  const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(normalized);
+  return data.publicUrl;
+}
+
 export function HeroImageSlider({ config, fallbackImage, label }: HeroImageSliderProps) {
-  const images = useMemo(() => config.images.filter(Boolean).slice(0, 3), [config.images]);
+  const supabase = useMemo(() => createClient(), []);
+  const images = useMemo(
+    () => config.images.filter(Boolean).slice(0, 3).map((entry) => resolveStorageImage(entry, supabase)),
+    [config.images, supabase],
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
