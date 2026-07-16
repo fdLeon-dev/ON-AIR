@@ -578,6 +578,7 @@ export async function createProduct(
 
 export async function updateProduct(id: string, updates: Partial<Product>, supabaseClient?: SupabaseClientLike) {
   const rawUpdates: Record<string, unknown> = { ...(updates as Record<string, unknown>) };
+  const hasOfferPriceUpdate = Object.prototype.hasOwnProperty.call(rawUpdates, "offerPrice");
   const imageKeysPresent =
     "image1" in rawUpdates ||
     "image2" in rawUpdates ||
@@ -621,7 +622,14 @@ export async function updateProduct(id: string, updates: Partial<Product>, supab
 
   const updatePayload: Record<string, unknown> = {
     ...rawUpdates,
-    ...(typeof updates.offerPrice === "number" ? { offer_price: updates.offerPrice } : {}),
+    ...(hasOfferPriceUpdate
+      ? {
+          offer_price:
+            typeof updates.offerPrice === "number" && Number.isFinite(updates.offerPrice)
+              ? updates.offerPrice
+              : null,
+        }
+      : {}),
     ...(typeof updates.description === "string" ? { short_description: updates.description } : {}),
     ...(typeof updates.stock === "number" || normalizedSizeStock ? { stock: deriveStockValue(updates.stock, normalizedSizeStock) } : {}),
     ...(typeof updates.longDescription === "string" ? { description: updates.longDescription } : {}),

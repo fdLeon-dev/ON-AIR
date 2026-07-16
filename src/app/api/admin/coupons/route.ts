@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveAdminAccess } from "@/lib/admin/auth";
 import { loadCoupons, saveCoupons, type Coupon } from "@/lib/data/coupons";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET() {
   const { isAdmin } = await resolveAdminAccess();
@@ -60,8 +61,11 @@ export async function DELETE(request: Request) {
   const body = (await request.json()) as { id?: string };
   if (!body.id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
 
-  const coupons = await loadCoupons();
-  const updated = coupons.filter((coupon) => coupon.id !== body.id);
-  await saveCoupons(updated);
+  const supabase = await createServerSupabaseClient({ serviceRole: true });
+  const { error } = await supabase.from("coupons").delete().eq("id", body.id);
+  if (error) {
+    return NextResponse.json({ error: error.message ?? "No se pudo eliminar el cupón" }, { status: 500 });
+  }
+
   return NextResponse.json({ success: true });
 }
