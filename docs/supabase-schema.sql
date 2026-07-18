@@ -190,6 +190,7 @@ create table if not exists public.coupons (
   label text not null,
   discount numeric(5,2) not null default 0,
   active boolean not null default true,
+  max_uses_per_user integer,
   expires_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

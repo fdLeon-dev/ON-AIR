@@ -22,6 +22,9 @@ export async function POST(request: Request) {
     discount: Number(body.discount ?? 0),
     active: body.active !== false,
     expiresAt: typeof body.expiresAt === "string" ? body.expiresAt : undefined,
+    maxUsesPerUser: typeof body.maxUsesPerUser === "number" && Number.isFinite(body.maxUsesPerUser)
+      ? Math.max(1, Math.floor(body.maxUsesPerUser))
+      : undefined,
   };
 
   const updated = [nextCoupon, ...coupons.filter((coupon) => coupon.id !== nextCoupon.id)];
@@ -46,6 +49,9 @@ export async function PATCH(request: Request) {
           discount: typeof body.discount === "number" ? body.discount : coupon.discount,
           active: typeof body.active === "boolean" ? body.active : coupon.active,
           expiresAt: typeof body.expiresAt === "string" ? body.expiresAt : coupon.expiresAt,
+          maxUsesPerUser: typeof body.maxUsesPerUser === "number" && Number.isFinite(body.maxUsesPerUser)
+            ? Math.max(1, Math.floor(body.maxUsesPerUser))
+            : coupon.maxUsesPerUser,
         }
       : coupon,
   );

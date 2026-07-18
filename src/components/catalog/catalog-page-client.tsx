@@ -9,6 +9,15 @@ type CatalogPageClientProps = {
   products: Product[];
 };
 
+function normalizeCategoryValue(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 function buildCatalogUrl(category: string, query: string) {
   const params = new URLSearchParams();
 
@@ -53,11 +62,25 @@ export function CatalogPageClient({ products }: CatalogPageClientProps) {
     return ["Todos", ...uniqueCategories];
   }, [products]);
 
+  useEffect(() => {
+    if (category === "Todos") return;
+    if (categories.includes(category)) return;
+
+    const normalizedCurrent = normalizeCategoryValue(category);
+    const matchingCategory = categories.find((option) => normalizeCategoryValue(option) === normalizedCurrent);
+    if (matchingCategory) {
+      setCategory(matchingCategory);
+    }
+  }, [category, categories]);
+
   const filteredProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     return products.filter((product) => {
-      const matchesCategory = category === "Todos" || product.category === category;
+      const matchesCategory =
+        category === "Todos"
+        || product.category === category
+        || normalizeCategoryValue(product.category) === normalizeCategoryValue(category);
       const matchesQuery = !normalizedQuery
         || product.name.toLowerCase().includes(normalizedQuery)
         || product.brand.toLowerCase().includes(normalizedQuery)

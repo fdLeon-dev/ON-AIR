@@ -9,6 +9,7 @@ export interface Coupon {
   discount: number;
   active: boolean;
   expiresAt?: string;
+  maxUsesPerUser?: number;
 }
 
 export const defaultCoupons: Coupon[] = [
@@ -24,6 +25,7 @@ function mapRowToCoupon(row: Record<string, unknown>): Coupon {
     discount: Number(row.discount ?? 0),
     active: Boolean(row.active ?? true),
     expiresAt: typeof row.expires_at === "string" ? row.expires_at : undefined,
+    maxUsesPerUser: typeof row.max_uses_per_user === "number" ? row.max_uses_per_user : undefined,
   };
 }
 
@@ -43,6 +45,7 @@ export async function saveCoupons(coupons: Coupon[]) {
     discount: coupon.discount,
     active: coupon.active,
     expires_at: coupon.expiresAt ?? null,
+    max_uses_per_user: typeof coupon.maxUsesPerUser === "number" ? coupon.maxUsesPerUser : null,
     updated_at: new Date().toISOString(),
   }));
   const { error } = await supabase.from(TABLE_NAME).upsert(rows, { onConflict: "id" });
