@@ -81,17 +81,9 @@ function normalizeHeroTransitionType(value: unknown): "fade" | "slide" {
 }
 
 function toProductCategory(value: unknown): ProductCategory {
-  const allowedCategories: ProductCategory[] = [
-    "Conjuntos deportivos",
-    "Buzos",
-    "Medias anti deslizante",
-    "Camperas",
-    "Remeras",
-    "Shorts",
-    "Accesorios",
-  ];
-
-  return allowedCategories.includes(value as ProductCategory) ? (value as ProductCategory) : "Conjuntos deportivos";
+  if (typeof value !== "string") return "Conjuntos deportivos";
+  const normalized = value.trim();
+  return normalized ? (normalized as ProductCategory) : "Conjuntos deportivos";
 }
 
 function toProductStatus(value: unknown): ProductStatus {
