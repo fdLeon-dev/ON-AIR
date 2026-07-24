@@ -24,29 +24,29 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
   const sizeStock = product.sizeStock ?? {};
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-      <div>
+    <div className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-start">
+      <div className="lg:sticky lg:top-24">
         <ProductGallery images={[product.image1, product.image2, product.image3, product.image4]} name={product.name} />
       </div>
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">{product.brand}</p>
-          <h1 className="mt-3 text-4xl font-semibold sm:text-5xl">{product.name}</h1>
-          <p className="mt-6 text-lg leading-8 text-zinc-400">{product.longDescription}</p>
+          <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl">{product.name}</h1>
+          <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-400 sm:mt-6 sm:text-lg sm:leading-8">{product.longDescription}</p>
         </div>
-        <div className="rounded-[2rem] border border-white/10 bg-zinc-950/80 p-6">
-          <div className="flex items-end gap-3">
-            <p className="text-3xl font-semibold">{formatCurrency(product.offerPrice ?? product.price)}</p>
+        <div className="rounded-[1.5rem] border border-white/10 bg-zinc-950/80 p-4 sm:p-6">
+          <div className="flex flex-wrap items-end gap-3">
+            <p className="text-2xl font-semibold sm:text-3xl">{formatCurrency(product.offerPrice ?? product.price)}</p>
             {product.offerPrice ? <p className="text-sm text-zinc-500 line-through">{formatCurrency(product.price)}</p> : null}
           </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">Talles: {product.sizes.join(", ")}</span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">Stock: {product.stock > 0 ? `${product.stock} unidades` : "Agotado"}</span>
+          <div className="mt-5 flex flex-wrap gap-2 sm:mt-6 sm:gap-3">
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-300 sm:text-sm">Talles: {product.sizes.join(", ")}</span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-300 sm:text-sm">Stock: {product.stock > 0 ? `${product.stock} unidades` : "Agotado"}</span>
           </div>
           {product.colors.length > 0 ? (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {product.colors.map((color) => (
-                <span key={color} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-zinc-300">
+                <span key={color} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-zinc-300 sm:text-sm">
                   {color}
                 </span>
               ))}
@@ -55,7 +55,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             <p className="mt-4 text-sm text-zinc-500">Sin colores disponibles</p>
           )}
           {availableSizes.length > 0 ? (
-            <div className="mt-6">
+            <div className="mt-5 sm:mt-6">
               <p className="text-sm font-medium text-white">Selecciona talle</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {availableSizes.map((size) => {
@@ -76,7 +76,7 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
             </div>
           ) : null}
           {product.colors.length > 0 ? (
-            <div className="mt-6">
+            <div className="mt-5 sm:mt-6">
               <p className="text-sm font-medium text-white">Selecciona color</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {product.colors.map((color) => {
@@ -95,13 +95,13 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
               </div>
             </div>
           ) : null}
-          <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_1fr]">
-            <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+          <div className="mt-6 grid gap-3 sm:mt-8 sm:grid-cols-[1fr_1fr] sm:gap-4">
+            <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4 sm:p-5">
               <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">Material</p>
               <p className="mt-3 text-sm text-zinc-300">{product.material}</p>
               {product.fabricDetails ? <p className="mt-2 text-sm text-zinc-300">{product.fabricDetails}</p> : null}
             </div>
-            <div className="rounded-[1.5rem] border border-white/10 bg-white/5 p-5">
+            <div className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4 sm:p-5">
               <p className="text-xs uppercase tracking-[0.3em] text-zinc-500">Estampado</p>
               <p className="mt-3 text-sm text-zinc-300">{product.print ?? "Acabado gráfico premium."}</p>
               {product.style ? (
@@ -112,15 +112,15 @@ export function ProductDetailClient({ product }: ProductDetailClientProps) {
               ) : null}
             </div>
           </div>
-          <div className="mt-8 flex flex-wrap gap-4">
+          <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:gap-4">
             <AddToCartButton
               product={product}
-              className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200"
+              className="w-full rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition hover:bg-zinc-200 sm:w-auto"
               label="Agregar al carrito"
               selectedSize={selectedSize}
               selectedColor={selectedColor}
             />
-            <Link href="/favorites" className="rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10">Agregar a favoritos</Link>
+            <Link href="/favorites" className="flex w-full items-center justify-center rounded-full border border-white/15 px-6 py-3 text-sm font-medium text-white transition hover:bg-white/10 sm:w-auto">Agregar a favoritos</Link>
           </div>
         </div>
       </div>

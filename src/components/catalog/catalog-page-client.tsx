@@ -102,14 +102,14 @@ export function CatalogPageClient({ products }: CatalogPageClientProps) {
   }, [category, query, router]);
 
   return (
-    <main className="mx-auto flex max-w-7xl flex-col gap-10 px-4 py-16 sm:px-6 lg:px-8">
+    <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
+        <div className="max-w-2xl">
           <p className="text-sm uppercase tracking-[0.3em] text-zinc-400">Catálogo</p>
-          <h1 className="text-3xl font-semibold sm:text-4xl">Ropa deportiva premium</h1>
+          <h1 className="text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl">Ropa deportiva premium</h1>
           <p className="mt-2 text-sm text-zinc-400">Filtra por categoría o busca por nombre, marca y descripción.</p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] lg:w-auto">
+        <div className="grid w-full gap-3 sm:grid-cols-[minmax(0,1fr)_auto] lg:w-auto">
           <label className="sr-only" htmlFor="catalog-search">
             Buscar productos
           </label>
@@ -120,13 +120,13 @@ export function CatalogPageClient({ products }: CatalogPageClientProps) {
             placeholder="Buscar en el catálogo"
             className="w-full rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-500 focus:border-white/30"
           />
-          <div className="rounded-full border border-white/10 bg-zinc-950/80 px-4 py-3 text-sm text-zinc-300">
+          <div className="flex items-center justify-center rounded-full border border-white/10 bg-zinc-950/80 px-4 py-3 text-sm text-zinc-300 sm:min-w-[7.5rem]">
             {filteredProducts.length} producto{filteredProducts.length === 1 ? "" : "s"}
           </div>
         </div>
       </div>
 
-      <div className="flex w-full flex-wrap items-center gap-3 overflow-x-auto pb-2">
+      <div className="-mx-4 flex w-[calc(100%+2rem)] flex-nowrap items-center gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:w-full sm:flex-wrap sm:px-0">
         {categories.map((option) => {
           const selected = option === category;
           return (
@@ -142,11 +142,11 @@ export function CatalogPageClient({ products }: CatalogPageClientProps) {
         })}
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {filteredProducts.length ? (
           filteredProducts.map((product) => <ProductCard key={product.id} product={product} />)
         ) : (
-          <div className="col-span-full rounded-[2rem] border border-white/10 bg-zinc-950/80 p-10 text-center text-zinc-400">
+          <div className="col-span-full rounded-[1.5rem] border border-white/10 bg-zinc-950/80 p-8 text-center text-zinc-400 sm:p-10">
             No se encontraron productos con estos filtros. Prueba otra categoría o busca con otra palabra clave.
           </div>
         )}

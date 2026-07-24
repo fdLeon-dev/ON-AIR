@@ -39,8 +39,8 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[0.72fr_1.28fr]">
-      <div className="grid gap-4">
+    <div className="grid gap-3 lg:grid-cols-[0.72fr_1.28fr] lg:gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-1 lg:gap-4">
         {galleryImages.slice(0, 3).map((image, index) => {
           const isActive = index === selected;
           return (
@@ -51,7 +51,7 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
               onMouseEnter={() => setSelected(index)}
               className={`overflow-hidden rounded-[1.5rem] border transition duration-300 ${isActive ? "border-emerald-400 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" : "border-white/10 hover:border-white/20"}`}
             >
-              <div className="relative h-32 w-full sm:h-36">
+              <div className="relative aspect-[4/5] w-full sm:aspect-[4/5] lg:aspect-auto lg:h-32">
                 <Image
                   src={image}
                   alt={`${name} miniatura ${index + 1}`}
@@ -65,9 +65,9 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
         })}
       </div>
 
-      <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-zinc-900">
+      <div className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-zinc-900 sm:rounded-[2rem]">
         <div
-          className="relative h-[520px] overflow-hidden"
+          className="relative aspect-[4/5] overflow-hidden lg:h-[520px] lg:aspect-auto"
           onPointerEnter={() => setIsZoomed(true)}
           onPointerMove={handlePointerMove}
           onPointerLeave={() => setIsZoomed(false)}

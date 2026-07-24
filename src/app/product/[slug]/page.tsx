@@ -22,7 +22,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   return (
     <div className="min-h-screen bg-black text-white">
       <Header />
-      <main className="mx-auto flex max-w-7xl flex-col gap-16 px-4 py-16 sm:px-6 lg:px-8">
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
         <ProductDetailClient product={product} />
       </main>
       <Footer />
